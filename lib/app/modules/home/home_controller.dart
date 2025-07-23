@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:marble_game/app/data/models/marble_model.dart';
 import 'package:marble_game/app/data/models/math_problem_model.dart';
+import 'package:marble_game/app/data/models/target_card_model.dart';
 
 class HomeController extends GetxController {
   final GlobalKey playAreaKey = GlobalKey();
@@ -11,6 +12,7 @@ class HomeController extends GetxController {
   final problem = MathProblemModel(dividend: 24, divisor: 3);
 
   final RxList<MarbleModel> marbles = <MarbleModel>[].obs;
+  final RxList<TargetCardModel> targetCards = <TargetCardModel>[].obs;
 
   void updateMarblePosition(int marbleId, Offset globalPosition) {
     final RenderBox box =
@@ -51,59 +53,80 @@ class HomeController extends GetxController {
     }
   }
 
-  void groupMarbles(int draggedMarbleId, int targetMarbleId) {
-    //
-    // cari index dari kedua kelereng
-    //
-    final int draggedIndex = marbles.indexWhere((m) => m.id == draggedMarbleId);
-    final int targetIndex = marbles.indexWhere((m) => m.id == targetMarbleId);
+  void addMarbleToTarget(int marbleId, int targetId) {
+    final int marbleIndex = marbles.indexWhere((m) => m.id == marbleId);
+    if (marbleIndex != -1) {
+      final marble = marbles[marbleIndex];
+      marbles.removeAt(marbleIndex);
+      targetCards[targetId].marbles.add(marble);
+    }
+  }
 
-    //
-    // jika kedua kelereng ditemukan
-    //
-    if (draggedIndex != -1 && targetIndex != -1) {
-      //
-      // ambil kelereng yang di drag dan kelereng target
-      //
-      final draggedMarble = marbles[draggedIndex];
-      final targetMarble = marbles[targetIndex];
+  void checkAnswer() {
+    final correctAnswer = problem.dividend ~/ problem.divisor;
+    bool allCorrect = true;
 
-      final newGroupId = targetMarble.groupId ?? targetMarble.id;
+    for (var card in targetCards) {
+      if (card.marbles.length == correctAnswer) {
+        card.isCorrect.value = true;
+      } else {
+        card.isCorrect.value = false;
+        allCorrect = false;
+      }
+    }
 
-      //
-      // buat ulang objek kelereng yang di drag dan kelereng target
-      //
-      final updatedDraggedMarble = MarbleModel(
-        id: draggedMarble.id,
-        position: targetMarble.position + const Offset(20, 0),
-        groupId: newGroupId,
+    Get.dialog(
+      AlertDialog(
+        title: Text(allCorrect ? 'Benar!' : 'Salah!'),
+        content: Text(
+          allCorrect
+              ? 'Selamat! Jawaban kamu benar.'
+              : 'Masih ada yang salah, coba periksa lagi.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('OK')),
+        ],
+      ),
+    );
+  }
+
+  void returnMarbleToPlayArea(int marbleId, int fromCardId) {
+    final card = targetCards.firstWhere((c) => c.id == fromCardId);
+    final marbleIndex = card.marbles.indexWhere((m) => m.id == marbleId);
+
+    if (marbleIndex != -1) {
+      final marble = card.marbles[marbleIndex];
+      card.marbles.removeAt(marbleIndex);
+
+      // Reset position to a random one within the play area
+      final RenderBox box =
+          playAreaKey.currentContext!.findRenderObject() as RenderBox;
+      final Random random = Random();
+      final updatedMarble = MarbleModel(
+        id: marble.id,
+        position: Offset(
+          random.nextDouble() * (box.size.width - 40),
+          random.nextDouble() * (box.size.height - 40),
+        ),
       );
 
-      //
-      // buat ulang objek kelereng target
-      //
-      final updatedTargetMarble = MarbleModel(
-        id: targetMarble.id,
-        position: targetMarble.position,
-        groupId: newGroupId,
-      );
-
-      //
-      // update list kelereng
-      //
-      marbles[draggedIndex] = updatedDraggedMarble;
-      marbles[targetIndex] = updatedTargetMarble;
-
-      print(
-        'Kelereng $draggedMarbleId & $targetMarbleId sekarang ada di grup $newGroupId',
-      );
+      marbles.add(updatedMarble);
     }
   }
 
   @override
   void onInit() {
     super.onInit();
+    initializeTargetCards();
     generateMarbles();
+  }
+
+  void initializeTargetCards() {
+    targetCards.assignAll([
+      TargetCardModel(id: 0, color: Colors.red),
+      TargetCardModel(id: 1, color: Colors.yellow),
+      TargetCardModel(id: 2, color: Colors.green),
+    ]);
   }
 
   void generateMarbles() {
