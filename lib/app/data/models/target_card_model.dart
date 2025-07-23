@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:marble_game/app/data/models/marble_model.dart';
 
 class TargetCardModel {
   final int id;
   final Color color;
-  final RxList<MarbleModel> marbles;
+  final Rx<int?> assignedGroupId; // ID grup yang ditugaskan ke kartu ini
   final RxBool isCorrect;
 
   TargetCardModel({
     required this.id,
     required this.color,
-    List<MarbleModel>? marbles,
+    int? groupId,
     bool? isCorrect,
-  }) : marbles = (marbles ?? []).obs,
+  }) : assignedGroupId = Rx<int?>(groupId),
        isCorrect = (isCorrect ?? false).obs;
+
+  bool get hasGroup => assignedGroupId.value != null;
+
+  void assignGroup(int groupId) {
+    if (!hasGroup) {
+      assignedGroupId.value = groupId;
+    }
+  }
+
+  void clearGroup() {
+    assignedGroupId.value = null;
+    isCorrect.value = false;
+  }
 }

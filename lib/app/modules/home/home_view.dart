@@ -4,6 +4,7 @@ import 'home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,181 +19,138 @@ class HomeView extends GetView<HomeController> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            //
-            // 1. WIDGET SOAL MATEMATIKA
-            // Menampilkan data dari controller
-            //
+            // Problem Display
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: Colors.white.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
-              //
-              // Menampilkan data dari controller
-              //
               child: Text(
                 '${controller.problem.dividend} ÷ ${controller.problem.divisor}',
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
             ),
 
             const SizedBox(height: 24),
-            //
-            // 2. AREA UTAMA (KARTU TARGET & AREA PERMAINAN)
-            //
 
-            // SISI KIRI: KARTU-KARTU TARGET
             Expanded(
               child: Row(
                 children: [
+                  // Target Cards Column
                   Column(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: List.generate(controller.targetCards.length, (
-                      index,
-                    ) {
-                      final card = controller.targetCards[index];
-                      return DragTarget<int>(
-                        builder: (context, candidateData, rejectedData) {
-                          return Obx(
-                            () => Container(
+                    children: List.generate(
+                      controller.targetCards.length,
+                      (index) => Obx(() {
+                        final card = controller.targetCards[index];
+                        return DragTarget<int>(
+                          builder: (context, candidateData, rejectedData) {
+                            return Container(
                               width: 80,
                               height: 120,
-                              padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: card.color.withOpacity(0.5),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color:
-                                      card.isCorrect.value ||
-                                          card.marbles.isEmpty
-                                      ? card.color
-                                      : Colors.red,
-                                  width:
-                                      card.isCorrect.value ||
-                                          card.marbles.isEmpty
-                                      ? 2
-                                      : 4,
+                                  color: card.isCorrect.value ? card.color : Colors.red,
+                                  width: card.isCorrect.value ? 2 : 4,
                                 ),
                               ),
-                              child: Wrap(
-                                spacing: 4,
-                                runSpacing: 4,
-                                children: card.marbles.map((marble) {
-                                  return GestureDetector(
-                                    onTap: () {
-                                      controller.returnMarbleToPlayArea(
-                                        marble.id,
-                                        card.id,
-                                      );
-                                    },
-                                    child: Container(
-                                      width: 15,
-                                      height: 15,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.deepPurple,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          );
-                        },
-                        onWillAcceptWithDetails: (data) => true,
-                        onAcceptWithDetails: (details) {
-                          controller.addMarbleToTarget(details.data, card.id);
-                        },
-                      );
-                    }),
+                            );
+                          },
+                          onWillAccept: (groupId) => groupId != null && !card.hasGroup,
+                          onAccept: (groupId) {
+                            controller.assignGroupToCard(groupId, card.id);
+                          },
+                        );
+                      }),
+                    ),
                   ),
 
                   const SizedBox(width: 16),
-                  //
-                  // SISI KANAN: AREA PERMAINAN
-                  //
+
+                  // Play Area
                   Expanded(
                     child: Container(
                       key: controller.playAreaKey,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: Colors.white.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Obx(
-                        () => Stack(
+                      child: Obx(() {
+                        return Stack(
                           children: controller.marbles.map((marble) {
                             return Positioned(
                               left: marble.position.dx,
                               top: marble.position.dy,
-                              child: Draggable<int>(
-                                data: marble.id,
-                                feedback: Container(
-                                  width: 45,
-                                  height: 45,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.7),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        blurRadius: 10,
+                              child: DragTarget<int>(
+                                builder: (context, candidateData, rejectedData) {
+                                  return Draggable<int>(
+                                    data: marble.groupId ?? marble.id,
+                                    feedback: Container(
+                                      width: 45,
+                                      height: 45,
+                                      decoration: BoxDecoration(
+                                        color: marble.color.withOpacity(0.7),
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.3),
+                                            blurRadius: 10,
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                // Widget yang ditinggal di posisi asal saat di-drag
-                                childWhenDragging: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.deepPurple.withValues(
-                                      alpha: 0.2,
                                     ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                // Fungsi yang dipanggil saat drag selesai (jari diangkat)
-                                onDragEnd: (details) {
-                                  controller.updateMarblePosition(
-                                    marble.id,
-                                    details.offset,
+                                    childWhenDragging: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: marble.color.withOpacity(0.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: marble.color,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.black,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                    onDragEnd: (details) {
+                                      if (!marble.isLocked) {
+                                        controller.updateMarblePosition(
+                                          marble.id,
+                                          details.offset,
+                                        );
+                                      }
+                                    },
                                   );
                                 },
-                                // Widget asli yang terlihat saat tidak di-drag
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                    border: Border.fromBorderSide(
-                                      BorderSide(
-                                        color: Colors.black,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                                onWillAccept: (data) =>
+                                    data != null && !marble.isLocked && data != marble.id,
+                                onAccept: (data) {
+                                  controller.groupMarbles(data, marble.id);
+                                },
                               ),
                             );
                           }).toList(),
-                        ),
-                      ),
+                        );
+                      }),
                     ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 24),
-            //
-            // 3. TOMBOL CEK JAWABAN
-            //
+
+            // Check Answer Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
