@@ -83,60 +83,76 @@ class HomeView extends GetView<HomeController> {
                               left: marble.position.dx,
                               top: marble.position.dy,
 
-                              child: Draggable<int>(
-                                data: marble.id,
+                              child: DragTarget<int>(
+                                builder: (context, candidateData, rejectedData) {
+                                  return Draggable<int>(
+                                    data: marble.id,
 
-                                feedback: Container(
-                                  width: 45,
-                                  height: 45,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.7),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.3,
+                                    feedback: Container(
+                                      width: 45,
+                                      height: 45,
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withValues(
+                                          alpha: 0.7,
                                         ),
-                                        blurRadius: 10,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            blurRadius: 10,
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                // Widget yang ditinggal di posisi asal saat di-drag
-                                childWhenDragging: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.deepPurple.withValues(
-                                      alpha: 0.2,
                                     ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                // Fungsi yang dipanggil saat drag selesai (jari diangkat)
-                                onDragEnd: (details) {
-                                  controller.updateMarblePosition(
-                                    marble.id,
-                                    details.offset,
+                                    // Widget yang ditinggal di posisi asal saat di-drag
+                                    childWhenDragging: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: Colors.deepPurple.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    // Fungsi yang dipanggil saat drag selesai (jari diangkat)
+                                    onDragEnd: (details) {
+                                      controller.updateMarblePosition(
+                                        marble.id,
+                                        details.offset,
+                                      );
+                                    },
+                                    // Widget asli yang terlihat saat tidak di-drag
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                        border: Border.fromBorderSide(
+                                          BorderSide(
+                                            color: Colors.black,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   );
                                 },
-                                // Widget asli yang terlihat saat tidak di-drag
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                    border: Border.fromBorderSide(
-                                      BorderSide(
-                                        color: Colors.black,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                                onWillAcceptWithDetails: (details) {
+                                  // tidak di izinkan kelereng dijatuhkan ke dirinya sendiri
+                                  return details.data != marble.id;
+                                },
+                                // Fungsi yang dijalankan saat drop berhasil diterima
+                                onAcceptWithDetails: (details) {
+                                  controller.groupMarbles(
+                                    details.data,
+                                    marble.id,
+                                  );
+                                },
                               ),
-                              // --- AKHIR MODIFIKASI ---
                             );
                           }).toList(),
                         ),
@@ -153,9 +169,7 @@ class HomeView extends GetView<HomeController> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // Logika pengecekan akan ditambahkan di sini
-                },
+                onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

@@ -52,9 +52,52 @@ class HomeController extends GetxController {
   }
 
   void groupMarbles(int draggedMarbleId, int targetMarbleId) {
-    print(
-      'GROUPING: Kelereng ID $draggedMarbleId dijatuhkan ke kelereng ID $targetMarbleId',
-    );
+    //
+    // cari index dari kedua kelereng
+    //
+    final int draggedIndex = marbles.indexWhere((m) => m.id == draggedMarbleId);
+    final int targetIndex = marbles.indexWhere((m) => m.id == targetMarbleId);
+
+    //
+    // jika kedua kelereng ditemukan
+    //
+    if (draggedIndex != -1 && targetIndex != -1) {
+      //
+      // ambil kelereng yang di drag dan kelereng target
+      //
+      final draggedMarble = marbles[draggedIndex];
+      final targetMarble = marbles[targetIndex];
+
+      final newGroupId = targetMarble.groupId ?? targetMarble.id;
+
+      //
+      // buat ulang objek kelereng yang di drag dan kelereng target
+      //
+      final updatedDraggedMarble = MarbleModel(
+        id: draggedMarble.id,
+        position: targetMarble.position + const Offset(20, 0),
+        groupId: newGroupId,
+      );
+
+      //
+      // buat ulang objek kelereng target
+      //
+      final updatedTargetMarble = MarbleModel(
+        id: targetMarble.id,
+        position: targetMarble.position,
+        groupId: newGroupId,
+      );
+
+      //
+      // update list kelereng
+      //
+      marbles[draggedIndex] = updatedDraggedMarble;
+      marbles[targetIndex] = updatedTargetMarble;
+
+      print(
+        'Kelereng $draggedMarbleId & $targetMarbleId sekarang ada di grup $newGroupId',
+      );
+    }
   }
 
   @override
