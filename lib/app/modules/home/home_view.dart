@@ -68,36 +68,77 @@ class HomeView extends GetView<HomeController> {
                   const SizedBox(width: 16),
                   //
                   // SISI KANAN: AREA PERMAINAN
-                  // Kita gunakan Stack agar bisa menumpuk kelereng di koordinat bebas
                   //
                   Expanded(
                     child: Container(
+                      key: controller.playAreaKey,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Obx(
                         () => Stack(
-                          children: controller.marbles
-                              .map(
-                                (marble) => Positioned(
-                                  left: marble.position.dx,
-                                  top: marble.position.dy,
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.red,
-                                      border: Border.all(
+                          children: controller.marbles.map((marble) {
+                            return Positioned(
+                              left: marble.position.dx,
+                              top: marble.position.dy,
+
+                              child: Draggable<int>(
+                                data: marble.id,
+
+                                feedback: Container(
+                                  width: 45,
+                                  height: 45,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withValues(alpha: 0.7),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.3,
+                                        ),
+                                        blurRadius: 10,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Widget yang ditinggal di posisi asal saat di-drag
+                                childWhenDragging: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.deepPurple.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                // Fungsi yang dipanggil saat drag selesai (jari diangkat)
+                                onDragEnd: (details) {
+                                  controller.updateMarblePosition(
+                                    marble.id,
+                                    details.offset,
+                                  );
+                                },
+                                // Widget asli yang terlihat saat tidak di-drag
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.fromBorderSide(
+                                      BorderSide(
                                         color: Colors.black,
-                                        width: 1,
+                                        width: 1.5,
                                       ),
                                     ),
                                   ),
                                 ),
-                              )
-                              .toList(),
+                              ),
+                              // --- AKHIR MODIFIKASI ---
+                            );
+                          }).toList(),
                         ),
                       ),
                     ),
