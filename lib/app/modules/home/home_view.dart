@@ -86,50 +86,64 @@ class HomeView extends GetView<HomeController> {
                               top: marble.position.dy,
                               child: DragTarget<int>(
                                 builder: (context, candidateData, rejectedData) {
-                                  return Draggable<int>(
-                                    data: marble.groupId ?? marble.id,
-                                    feedback: Container(
-                                      width: 45,
-                                      height: 45,
-                                      decoration: BoxDecoration(
-                                        color: marble.color.withOpacity(0.7),
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.3),
-                                            blurRadius: 10,
+                                  return GestureDetector(
+                                    onDoubleTap: () {
+                                      controller.ungroupMarble(marble.id);
+                                    },
+                                    child: Draggable<int>(
+                                      data: marble.groupId ?? marble.id,
+                                      feedback: Container(
+                                        width: 45,
+                                        height: 45,
+                                        decoration: BoxDecoration(
+                                          color: marble.color.withOpacity(0.7),
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.3),
+                                              blurRadius: 10,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      childWhenDragging: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: marble.color.withOpacity(0.2),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      onDragUpdate: (details) {
+                                        if (!marble.isLocked) {
+                                          controller.updateMarblePositionDuringDrag(
+                                            marble.id,
+                                            details.globalPosition,
+                                          );
+                                        }
+                                      },
+                                      onDragEnd: (details) {
+                                        if (!marble.isLocked) {
+                                          controller.updateMarblePosition(
+                                            marble.id,
+                                            details.offset,
+                                          );
+                                        }
+                                      },
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: marble.color,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: marble.groupId != null ? 
+                                              Colors.white : Colors.black,
+                                            width: marble.groupId != null ? 2.0 : 1.5,
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                    childWhenDragging: Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: marble.color.withOpacity(0.2),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    child: Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: marble.color,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.black,
-                                          width: 1.5,
                                         ),
                                       ),
                                     ),
-                                    onDragEnd: (details) {
-                                      if (!marble.isLocked) {
-                                        controller.updateMarblePosition(
-                                          marble.id,
-                                          details.offset,
-                                        );
-                                      }
-                                    },
                                   );
                                 },
                                 onWillAccept: (data) =>

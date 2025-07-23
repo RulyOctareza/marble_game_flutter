@@ -207,6 +207,52 @@ class HomeController extends GetxController {
     _updateMarbles(updates);
   }
 
+  void ungroupMarble(int marbleId) {
+    final marble = marbles.firstWhere((m) => m.id == marbleId);
+    if (marble.isLocked || marble.groupId == null) return;
+
+    final updates = <MarbleModel>[];
+    updates.add(marble.copyWith(groupId: null, isGrouped: false));
+
+    _updateMarbles(updates);
+  }
+
+  void updateMarblePositionDuringDrag(int marbleId, Offset globalPosition) {
+    final RenderBox box =
+        playAreaKey.currentContext!.findRenderObject() as RenderBox;
+    final Offset localPosition = box.globalToLocal(globalPosition);
+    const double marbleSize = 40.0;
+
+    final clampedPosition = Offset(
+      localPosition.dx.clamp(0.0, box.size.width - marbleSize),
+      localPosition.dy.clamp(0.0, box.size.height - marbleSize),
+    );
+
+    final marble = marbles.firstWhere((m) => m.id == marbleId);
+    if (marble.isLocked) return;
+
+    // Perbarui posisi secara real-time
+    if (marble.groupId != null) {
+      var index = 0;
+      final updates = <MarbleModel>[];
+      for (var groupMarble in marbles.where(
+        (m) => m.groupId == marble.groupId,
+      )) {
+        updates.add(
+          groupMarble.copyWith(
+            position:
+                clampedPosition +
+                Offset((index % 3) * 20.0, (index ~/ 3) * 20.0),
+          ),
+        );
+        index++;
+      }
+      _updateMarbles(updates);
+    } else {
+      _updateMarbles([marble.copyWith(position: clampedPosition)]);
+    }
+  }
+
   @override
   void onInit() {
     super.onInit();
