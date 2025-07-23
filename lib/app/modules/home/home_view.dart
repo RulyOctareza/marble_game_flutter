@@ -25,7 +25,7 @@ class HomeView extends GetView<HomeController> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               //
@@ -57,7 +57,7 @@ class HomeView extends GetView<HomeController> {
                         width: 80,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: colors[index].withOpacity(0.5),
+                          color: colors[index].withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: colors[index], width: 2),
                         ),
@@ -73,10 +73,33 @@ class HomeView extends GetView<HomeController> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Stack(children: []),
+                      child: Obx(
+                        () => Stack(
+                          children: controller.marbles
+                              .map(
+                                (marble) => Positioned(
+                                  left: marble.position.dx,
+                                  top: marble.position.dy,
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.red,
+                                      border: Border.all(
+                                        color: Colors.black,
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
                     ),
                   ),
                 ],
