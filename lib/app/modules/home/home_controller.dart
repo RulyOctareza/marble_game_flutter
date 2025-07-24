@@ -9,14 +9,98 @@ class HomeController extends GetxController {
   final GlobalKey playAreaKey = GlobalKey();
   final String title = "Marble Grouping Game";
 
-  final problem = MathProblemModel(dividend: 24, divisor: 3);
-
+  final Rx<MathProblemModel> problem = MathProblemModel(
+    dividend: 24,
+    divisor: 3,
+  ).obs;
   // Menggunakan .obs untuk setiap marble individual
   final marbles = <MarbleModel>[].obs;
   final targetCards = <TargetCardModel>[].obs;
 
   // Track if check answer has been pressed
   final hasCheckedAnswer = false.obs;
+
+  // ✅ Add current level tracking
+  final currentLevel = 1.obs;
+  final totalLevels = 10.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    initializeTargetCards();
+    // Delay marble generation until after first frame to get accurate play area size
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      generateMarbles();
+    });
+  }
+
+  // ✅ New method to start a completely new game
+  void startNewGame() {
+    // Generate new random problem
+    problem.value = MathProblemModel.getRandomProblem();
+
+    // Reset state
+    hasCheckedAnswer.value = false;
+
+    // Clear all groups and assignments
+    final updates = <MarbleModel>[];
+    for (var marble in marbles) {
+      updates.add(
+        marble.copyWith(
+          groupId: null,
+          isGrouped: false,
+          isLocked: false,
+          color: Colors.deepPurple,
+        ),
+      );
+    }
+    _updateMarbles(updates);
+
+    // Reset target cards completely
+    for (var card in targetCards) {
+      card.clearGroup();
+      card.isCorrect.value = false;
+    }
+
+    // Generate marbles based on new problem
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      generateMarbles();
+    });
+  }
+
+  // ✅ Method to go to next level
+  void nextLevel() {
+    if (currentLevel.value < totalLevels.value) {
+      currentLevel.value++;
+      startNewGame(); // Generate new problem
+
+      Get.snackbar(
+        'Level ${currentLevel.value}',
+        'New challenge! Solve: ${problem.value.dividend} ÷ ${problem.value.divisor}',
+        backgroundColor: Colors.blue.withOpacity(0.8),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    } else {
+      // Game completed
+      Get.dialog(
+        AlertDialog(
+          title: const Text('🎉 Congratulations!'),
+          content: const Text('You have completed all levels!'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Get.back();
+                currentLevel.value = 1;
+                startNewGame();
+              },
+              child: const Text('Play Again'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   void _updateMarbles(List<MarbleModel> updates) {
     final List<MarbleModel> newList = List.from(marbles);
@@ -133,7 +217,8 @@ class HomeController extends GetxController {
     // Allow assignment regardless of correct count - let user make mistakes
     if (groupMarbles.isEmpty) return; // Must have at least some marbles
 
-    final correctCount = problem.dividend ~/ problem.divisor; // Should be 8
+    final correctCount =
+        problem.value.dividend ~/ problem.value.divisor; // Should be 8
     final isCorrect = groupMarbles.length == correctCount;
 
     // Update status kartu
@@ -329,9 +414,14 @@ class HomeController extends GetxController {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (allCorrect) ...[
-              const Text(
-                '🎉 Congratulations! All assignments are correct!',
-                style: TextStyle(fontSize: 16),
+              Text(
+                '🎉 Excellent! You solved ${problem.value.dividend} ÷ ${problem.value.divisor} = ${problem.value.dividend ~/ problem.value.divisor}',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Level ${currentLevel.value} completed!',
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ] else ...[
               const Text(
@@ -344,7 +434,9 @@ class HomeController extends GetxController {
               if (wrongCards > 0) Text('❌ $wrongCards wrong assignment(s)'),
               if (emptyCards > 0) Text('⚠️ $emptyCards empty card(s)'),
               const SizedBox(height: 8),
-              const Text('Fix the red cards to complete the game!'),
+              Text(
+                'Each card needs exactly ${problem.value.dividend ~/ problem.value.divisor} marbles!',
+              ),
             ],
           ],
         ),
@@ -355,12 +447,25 @@ class HomeController extends GetxController {
                 Get.back();
                 resetGame();
               },
-              child: const Text('Reset & Try Again'),
+              child: const Text('Try Again'),
+            ),
+          ],
+          if (allCorrect) ...[
+            TextButton(
+              onPressed: () {
+                Get.back();
+                nextLevel(); // ✅ Go to next level
+              },
+              child: Text(
+                currentLevel.value < totalLevels.value
+                    ? 'Next Level'
+                    : 'Finish Game',
+              ),
             ),
           ],
           TextButton(
             onPressed: () => Get.back(),
-            child: Text(allCorrect ? 'Great!' : 'Continue'),
+            child: Text(allCorrect ? 'Stay Here' : 'Continue'),
           ),
         ],
       ),
@@ -503,14 +608,9 @@ class HomeController extends GetxController {
     _updateMarbles(updates);
   }
 
-  @override
-  void onInit() {
-    super.onInit();
-    initializeTargetCards();
-    // Delay marble generation until after first frame to get accurate play area size
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      generateMarbles();
-    });
+  // ✅ Method to manually change problem (for testing)
+  void changeProblem() {
+    startNewGame();
   }
 
   void initializeTargetCards() {
@@ -547,7 +647,10 @@ class HomeController extends GetxController {
     final Random random = Random();
     List<MarbleModel> newMarbles = [];
 
-    for (int i = 0; i < problem.dividend; i++) {
+    // ✅ Generate marbles based on current problem dividend
+    final totalMarbles = problem.value.dividend;
+
+    for (int i = 0; i < totalMarbles; i++) {
       newMarbles.add(
         MarbleModel(
           id: i,
@@ -568,6 +671,9 @@ class HomeController extends GetxController {
   void resetGame() {
     // Reset check answer status
     hasCheckedAnswer.value = false;
+
+    // Reset level to 1
+    currentLevel.value = 1;
 
     // Clear all groups and assignments
     final updates = <MarbleModel>[];
@@ -594,12 +700,12 @@ class HomeController extends GetxController {
 
     targetCards.refresh();
 
-    Get.snackbar(
-      'Game Reset',
-      'Game has been reset. Try again!',
-      backgroundColor: Colors.blue.withValues(alpha: .8),
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
+    // Get.snackbar(
+    //   'Game Reset',
+    //   'Try again! Solve: ${problem.value.dividend} ÷ ${problem.value.divisor}',
+    //   backgroundColor: Colors.blue.withValues(alpha: .8),
+    //   colorText: Colors.white,
+    //   duration: const Duration(seconds: 2),
+    // );
   }
 }

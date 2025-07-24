@@ -12,13 +12,13 @@ class HomeView extends GetView<HomeController> {
 
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
                   vertical: 16,
-                  horizontal: 24,
+                  horizontal: 16,
                 ),
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -36,7 +36,63 @@ class HomeView extends GetView<HomeController> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+
+              // ✅ Level indicator dan New Problem button
+              Row(
+                children: [
+                  // Level indicator
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Obx(
+                        () => Column(
+                          children: [
+                            Text(
+                              'Level ${controller.currentLevel.value}/${controller.totalLevels.value}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.deepPurple,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // New Problem button
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: controller.changeProblem,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.purple,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'New Problem',
+                        style: TextStyle(fontSize: 14, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
 
               Container(
                 padding: EdgeInsets.only(
@@ -64,17 +120,20 @@ class HomeView extends GetView<HomeController> {
                             color: const Color(0xFF5A2D6F),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            '${controller.problem.dividend} ÷ ${controller.problem.divisor}',
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          child: Obx(
+                            () => Text(
+                              '${controller.problem.value.dividend} ÷ ${controller.problem.value.divisor}',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
 
+                        // ✅ Equals sign positioned at center bottom
                         Positioned(
                           bottom: -15,
                           left: 0,
@@ -84,7 +143,7 @@ class HomeView extends GetView<HomeController> {
                               width: 40,
                               height: 30,
                               decoration: BoxDecoration(
-                                color: Colors.purple,
+                                color: Colors.black,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Center(
@@ -122,7 +181,7 @@ class HomeView extends GetView<HomeController> {
                               return AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
                                 width: 90,
-                                height: 130,
+                                height: 120, // Reduced from 130 to 120
                                 decoration: BoxDecoration(
                                   color: card.hasGroup
                                       ? (card.isCorrect.value
@@ -179,13 +238,7 @@ class HomeView extends GetView<HomeController> {
                                               style: TextStyle(
                                                 fontSize: 28,
                                                 fontWeight: FontWeight.bold,
-                                                color:
-                                                    controller
-                                                            .hasCheckedAnswer
-                                                            .value &&
-                                                        !card.isCorrect.value
-                                                    ? Colors.red
-                                                    : Colors.white,
+                                                color: Colors.white,
                                               ),
                                             ),
                                             const Text(
@@ -484,6 +537,7 @@ class HomeView extends GetView<HomeController> {
 
               Row(
                 children: [
+                  // Reset Game button
                   Expanded(
                     child: ElevatedButton(
                       onPressed: controller.resetGame,
@@ -495,27 +549,29 @@ class HomeView extends GetView<HomeController> {
                         ),
                       ),
                       child: const Text(
-                        'Reset Game',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
+                        'Reset Groups',
+                        style: TextStyle(fontSize: 14, color: Colors.white),
                       ),
                     ),
                   ),
 
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
 
+                  // Check Answer button
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: controller.checkAnswer,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.green,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: const Text(
                         'Check Answer',
-                        style: TextStyle(fontSize: 20),
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ),
                   ),
