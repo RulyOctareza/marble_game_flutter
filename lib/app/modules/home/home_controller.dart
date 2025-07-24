@@ -597,7 +597,7 @@ class HomeController extends GetxController {
     Get.snackbar(
       'Game Reset',
       'Game has been reset. Try again!',
-      backgroundColor: Colors.blue.withOpacity(0.8),
+      backgroundColor: Colors.blue.withValues(alpha: .8),
       colorText: Colors.white,
       duration: const Duration(seconds: 2),
     );
