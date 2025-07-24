@@ -223,8 +223,8 @@ class HomeView extends GetView<HomeController> {
                                         top: 8,
                                         right: 8,
                                         child: Container(
-                                          width: 24,
-                                          height: 24,
+                                          width: 20,
+                                          height: 20,
                                           decoration: BoxDecoration(
                                             color: Colors.white,
                                             shape: BoxShape.circle,
@@ -246,16 +246,42 @@ class HomeView extends GetView<HomeController> {
                                           ),
                                         ),
                                       ),
+                                      Positioned(
+                                        top: 12,
+                                        left: 6,
+                                        child: Text(
+                                          'WRONG',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
                                     ],
 
                                     if (card.hasGroup &&
                                         card.isCorrect.value) ...[
                                       Positioned(
+                                        top: 12,
+                                        left: 6,
+                                        child: Text(
+                                          'CORRECT',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.green,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                      Positioned(
                                         top: 8,
                                         right: 8,
                                         child: Container(
-                                          width: 24,
-                                          height: 24,
+                                          width: 20,
+                                          height: 20,
                                           decoration: BoxDecoration(
                                             color: Colors.white,
                                             shape: BoxShape.circle,
