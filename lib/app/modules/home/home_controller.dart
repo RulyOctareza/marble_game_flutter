@@ -39,7 +39,7 @@ class HomeController extends GetxController {
     // Jika target sudah di-lock, batalkan
     if (targetMarble.isLocked || draggedMarble.isLocked) return;
 
-    final correctCount = problem.dividend ~/ problem.divisor; // 24 ÷ 3 = 8
+    // final correctCount = problem.dividend ~/ problem.divisor; // 24 ÷ 3 = 8
 
     // Tentukan group ID yang akan digunakan
     int? newGroupId;
@@ -78,9 +78,8 @@ class HomeController extends GetxController {
     }
 
     // Jika total melebihi jawaban yang benar, batalkan
-    if (marbleIdsInNewGroup.length > correctCount) {
-      return;
-    }
+    // Tidak perlu membatasi jumlah marble dalam satu grup, jadi hapus pengecekan ini
+    // Sekarang, grup bisa berisi lebih dari correctCount marble
 
     // Update semua marble yang terlibat
     final updates = <MarbleModel>[];
