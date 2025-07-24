@@ -85,7 +85,7 @@ class HomeView extends GetView<HomeController> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
             Expanded(
               child: Row(
@@ -101,27 +101,23 @@ class HomeView extends GetView<HomeController> {
                           builder: (context, candidateData, rejectedData) {
                             return AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
-                              width: 80,
-                              height: 120,
+                              width: 90,
+                              height: 130,
                               decoration: BoxDecoration(
                                 color: card.hasGroup
-                                    ? (controller.hasCheckedAnswer.value
-                                          ? (card.isCorrect.value
-                                                ? card.color.withOpacity(
-                                                    0.8,
-                                                  ) // Normal color if correct
-                                                : card.color.withOpacity(
-                                                    0.7,
-                                                  )) // Red background if wrong
-                                          : card.color.withOpacity(
+                                    ? (card.isCorrect.value
+                                          ? card.color.withOpacity(
                                               0.8,
-                                            )) // Normal before check
-                                    : card.color.withOpacity(0.3),
+                                            ) // Normal color if correct
+                                          : card.color.withOpacity(
+                                              0.7,
+                                            )) // Red background if wrong
+                                    : card.color.withOpacity(
+                                        0.8,
+                                      ), // Normal before check
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color:
-                                      controller.hasCheckedAnswer.value &&
-                                          card.hasGroup
+                                  color: card.hasGroup
                                       ? (card.isCorrect.value
                                             ? Colors
                                                   .green // Green border if correct
@@ -146,8 +142,8 @@ class HomeView extends GetView<HomeController> {
                                     ? [
                                         BoxShadow(
                                           color: Colors.red.withOpacity(0.5),
-                                          blurRadius: 8,
-                                          spreadRadius: 2,
+                                          blurRadius: 12,
+                                          spreadRadius: 4,
                                         ),
                                       ]
                                     : null,
@@ -175,16 +171,18 @@ class HomeView extends GetView<HomeController> {
                                                           .hasCheckedAnswer
                                                           .value &&
                                                       !card.isCorrect.value
-                                                  ? Colors.white
-                                                  : Colors.white,
+                                                  ? Colors.red
+                                                  : Colors
+                                                        .white, // White if wrong, light red if correct
                                             ),
                                           ),
                                           const Text(
-                                            'marbles',
+                                            'Marbles',
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: Colors.white70,
                                             ),
+                                            textAlign: TextAlign.center,
                                           ),
 
                                           // Show status icons and text after check answer
@@ -209,8 +207,7 @@ class HomeView extends GetView<HomeController> {
                                     ),
                                   ),
                                   // Big X overlay for wrong answers
-                                  if (controller.hasCheckedAnswer.value &&
-                                      card.hasGroup &&
+                                  if (card.hasGroup &&
                                       !card.isCorrect.value) ...[
                                     Positioned(
                                       top: 8,
@@ -241,8 +238,7 @@ class HomeView extends GetView<HomeController> {
                                     ),
                                   ],
                                   // Green check overlay for correct answers
-                                  if (controller.hasCheckedAnswer.value &&
-                                      card.hasGroup &&
+                                  if (card.hasGroup &&
                                       card.isCorrect.value) ...[
                                     Positioned(
                                       top: 8,

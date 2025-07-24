@@ -134,8 +134,12 @@ class HomeController extends GetxController {
     // Allow assignment regardless of correct count - let user make mistakes
     if (groupMarbles.isEmpty) return; // Must have at least some marbles
 
+    final correctCount = problem.dividend ~/ problem.divisor; // Should be 8
+    final isCorrect = groupMarbles.length == correctCount;
+
     // Update status kartu
     targetCard.assignGroup(groupId);
+    targetCard.isCorrect.value = isCorrect;
 
     // Update semua kelereng dalam grup
     final updates = <MarbleModel>[];
@@ -146,39 +150,162 @@ class HomeController extends GetxController {
     _updateMarbles(updates);
   }
 
-  void checkAnswer() {
-    hasCheckedAnswer.value = true; // Mark that check answer has been pressed
+  // void checkAnswer() {
+  //   hasCheckedAnswer.value = true; // Mark that check answer has been pressed
 
-    bool allCorrect = true;
+  //   bool allCorrect = true;
+  //   int correctCards = 0;
+  //   int wrongCards = 0;
+  //   int emptyCards = 0;
+  //   final correctCount = problem.dividend ~/ problem.divisor; // Should be 8
+
+  //   for (var card in targetCards) {
+  //     if (card.hasGroup) {
+  //       final marbleCount = marbles
+  //           .where((m) => m.groupId == card.assignedGroupId.value)
+  //           .length;
+
+  //       final isCorrect = marbleCount == correctCount;
+  //       card.isCorrect.value = isCorrect;
+
+  //       if (isCorrect) {
+  //         correctCards++;
+  //       } else {
+  //         wrongCards++;
+  //         allCorrect = false;
+  //       }
+  //     } else {
+  //       // Empty card is considered wrong
+  //       card.isCorrect.value = false;
+  //       emptyCards++;
+  //       allCorrect = false;
+  //     }
+  //   }
+
+  //   // Enhanced dialog with detailed feedback
+  //   Get.dialog(
+  //     AlertDialog(
+  //       title: Row(
+  //         children: [
+  //           Icon(
+  //             allCorrect ? Icons.celebration : Icons.info_outline,
+  //             color: allCorrect ? Colors.green : Colors.orange,
+  //             size: 28,
+  //           ),
+  //           const SizedBox(width: 8),
+  //           Text(
+  //             allCorrect ? 'Perfect! 🎉' : 'Check Results',
+  //             style: TextStyle(
+  //               color: allCorrect ? Colors.green : Colors.black87,
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           if (allCorrect) ...[
+  //             const Text(
+  //               '🎉 Congratulations! All your answers are correct!',
+  //               style: TextStyle(fontSize: 16),
+  //             ),
+  //             const SizedBox(height: 8),
+  //             Text(
+  //               'You correctly grouped ${problem.dividend} marbles into ${targetCards.length} groups of $correctCount each.',
+  //               style: TextStyle(color: Colors.grey[600]),
+  //             ),
+  //           ] else ...[
+  //             const Text(
+  //               'Here are your results:',
+  //               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+  //             ),
+  //             const SizedBox(height: 12),
+  //             if (correctCards > 0) ...[
+  //               Row(
+  //                 children: [
+  //                   const Icon(
+  //                     Icons.check_circle,
+  //                     color: Colors.green,
+  //                     size: 20,
+  //                   ),
+  //                   const SizedBox(width: 8),
+  //                   Text('$correctCards card(s) correct ✅'),
+  //                 ],
+  //               ),
+  //               const SizedBox(height: 4),
+  //             ],
+  //             if (wrongCards > 0) ...[
+  //               Row(
+  //                 children: [
+  //                   const Icon(Icons.cancel, color: Colors.red, size: 20),
+  //                   const SizedBox(width: 8),
+  //                   Text('$wrongCards card(s) wrong ❌'),
+  //                 ],
+  //               ),
+  //               const SizedBox(height: 4),
+  //             ],
+  //             if (emptyCards > 0) ...[
+  //               Row(
+  //                 children: [
+  //                   const Icon(Icons.warning, color: Colors.orange, size: 20),
+  //                   const SizedBox(width: 8),
+  //                   Text('$emptyCards card(s) empty ⚠️'),
+  //                 ],
+  //               ),
+  //               const SizedBox(height: 8),
+  //             ],
+  //             Text(
+  //               'Each card should have exactly $correctCount marbles.\nCheck the red-bordered cards and try again!',
+  //               style: TextStyle(color: Colors.grey[600]),
+  //             ),
+  //           ],
+  //         ],
+  //       ),
+  //       actions: [
+  //         if (!allCorrect) ...[
+  //           TextButton(
+  //             onPressed: () {
+  //               Get.back();
+  //               resetGame();
+  //             },
+  //             child: const Text('Reset & Try Again'),
+  //           ),
+  //         ],
+  //         TextButton(
+  //           onPressed: () => Get.back(),
+  //           child: Text(allCorrect ? 'Great!' : 'OK'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  void checkAnswer() {
+    // ✅ Don't set hasCheckedAnswer anymore since feedback is instant
+    // hasCheckedAnswer.value = true; // Remove this line
+
+    // Count results based on current card states
     int correctCards = 0;
     int wrongCards = 0;
     int emptyCards = 0;
-    final correctCount = problem.dividend ~/ problem.divisor; // Should be 8
 
     for (var card in targetCards) {
       if (card.hasGroup) {
-        final marbleCount = marbles
-            .where((m) => m.groupId == card.assignedGroupId.value)
-            .length;
-
-        final isCorrect = marbleCount == correctCount;
-        card.isCorrect.value = isCorrect;
-
-        if (isCorrect) {
+        if (card.isCorrect.value) {
           correctCards++;
         } else {
           wrongCards++;
-          allCorrect = false;
         }
       } else {
-        // Empty card is considered wrong
-        card.isCorrect.value = false;
         emptyCards++;
-        allCorrect = false;
       }
     }
 
-    // Enhanced dialog with detailed feedback
+    bool allCorrect = correctCards == targetCards.length && emptyCards == 0;
+
+    // Show summary dialog
     Get.dialog(
       AlertDialog(
         title: Row(
@@ -190,7 +317,7 @@ class HomeController extends GetxController {
             ),
             const SizedBox(width: 8),
             Text(
-              allCorrect ? 'Perfect! 🎉' : 'Check Results',
+              allCorrect ? 'Perfect! 🎉' : 'Game Summary',
               style: TextStyle(
                 color: allCorrect ? Colors.green : Colors.black87,
                 fontWeight: FontWeight.bold,
@@ -204,58 +331,21 @@ class HomeController extends GetxController {
           children: [
             if (allCorrect) ...[
               const Text(
-                '🎉 Congratulations! All your answers are correct!',
+                '🎉 Congratulations! All assignments are correct!',
                 style: TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'You correctly grouped ${problem.dividend} marbles into ${targetCards.length} groups of $correctCount each.',
-                style: TextStyle(color: Colors.grey[600]),
               ),
             ] else ...[
               const Text(
-                'Here are your results:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                'Current status:',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 12),
-              if (correctCards > 0) ...[
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text('$correctCards card(s) correct ✅'),
-                  ],
-                ),
-                const SizedBox(height: 4),
-              ],
-              if (wrongCards > 0) ...[
-                Row(
-                  children: [
-                    const Icon(Icons.cancel, color: Colors.red, size: 20),
-                    const SizedBox(width: 8),
-                    Text('$wrongCards card(s) wrong ❌'),
-                  ],
-                ),
-                const SizedBox(height: 4),
-              ],
-              if (emptyCards > 0) ...[
-                Row(
-                  children: [
-                    const Icon(Icons.warning, color: Colors.orange, size: 20),
-                    const SizedBox(width: 8),
-                    Text('$emptyCards card(s) empty ⚠️'),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
-              Text(
-                'Each card should have exactly $correctCount marbles.\nCheck the red-bordered cards and try again!',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
+              const SizedBox(height: 8),
+              if (correctCards > 0)
+                Text('✅ $correctCards correct assignment(s)'),
+              if (wrongCards > 0) Text('❌ $wrongCards wrong assignment(s)'),
+              if (emptyCards > 0) Text('⚠️ $emptyCards empty card(s)'),
+              const SizedBox(height: 8),
+              const Text('Fix the red cards to complete the game!'),
             ],
           ],
         ),
@@ -271,7 +361,7 @@ class HomeController extends GetxController {
           ],
           TextButton(
             onPressed: () => Get.back(),
-            child: Text(allCorrect ? 'Great!' : 'OK'),
+            child: Text(allCorrect ? 'Great!' : 'Continue'),
           ),
         ],
       ),
@@ -426,7 +516,7 @@ class HomeController extends GetxController {
 
   void initializeTargetCards() {
     targetCards.assignAll([
-      TargetCardModel(id: 0, color: Colors.red),
+      TargetCardModel(id: 0, color: Colors.orangeAccent),
       TargetCardModel(id: 1, color: Colors.blue.shade400),
       TargetCardModel(id: 2, color: Colors.green),
     ]);
