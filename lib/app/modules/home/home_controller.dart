@@ -150,30 +150,129 @@ class HomeController extends GetxController {
     hasCheckedAnswer.value = true; // Mark that check answer has been pressed
 
     bool allCorrect = true;
-    final correctCount = problem.dividend ~/ problem.divisor;
+    int correctCards = 0;
+    int wrongCards = 0;
+    int emptyCards = 0;
+    final correctCount = problem.dividend ~/ problem.divisor; // Should be 8
 
     for (var card in targetCards) {
-      final hasCorrectGroup =
-          card.hasGroup &&
-          marbles
-                  .where((m) => m.groupId == card.assignedGroupId.value)
-                  .length ==
-              correctCount;
+      if (card.hasGroup) {
+        final marbleCount = marbles
+            .where((m) => m.groupId == card.assignedGroupId.value)
+            .length;
 
-      card.isCorrect.value = hasCorrectGroup;
-      if (!hasCorrectGroup) allCorrect = false;
+        final isCorrect = marbleCount == correctCount;
+        card.isCorrect.value = isCorrect;
+
+        if (isCorrect) {
+          correctCards++;
+        } else {
+          wrongCards++;
+          allCorrect = false;
+        }
+      } else {
+        // Empty card is considered wrong
+        card.isCorrect.value = false;
+        emptyCards++;
+        allCorrect = false;
+      }
     }
 
+    // Enhanced dialog with detailed feedback
     Get.dialog(
       AlertDialog(
-        title: Text(allCorrect ? 'Benar!' : 'Salah!'),
-        content: Text(
-          allCorrect
-              ? 'Selamat! Jawaban kamu benar.'
-              : 'Masih ada yang salah, coba periksa lagi.',
+        title: Row(
+          children: [
+            Icon(
+              allCorrect ? Icons.celebration : Icons.info_outline,
+              color: allCorrect ? Colors.green : Colors.orange,
+              size: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              allCorrect ? 'Perfect! 🎉' : 'Check Results',
+              style: TextStyle(
+                color: allCorrect ? Colors.green : Colors.black87,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (allCorrect) ...[
+              const Text(
+                '🎉 Congratulations! All your answers are correct!',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You correctly grouped ${problem.dividend} marbles into ${targetCards.length} groups of $correctCount each.',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ] else ...[
+              const Text(
+                'Here are your results:',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              if (correctCards > 0) ...[
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text('$correctCards card(s) correct ✅'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+              ],
+              if (wrongCards > 0) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.cancel, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Text('$wrongCards card(s) wrong ❌'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+              ],
+              if (emptyCards > 0) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.warning, color: Colors.orange, size: 20),
+                    const SizedBox(width: 8),
+                    Text('$emptyCards card(s) empty ⚠️'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              Text(
+                'Each card should have exactly $correctCount marbles.\nCheck the red-bordered cards and try again!',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ],
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('OK')),
+          if (!allCorrect) ...[
+            TextButton(
+              onPressed: () {
+                Get.back();
+                resetGame();
+              },
+              child: const Text('Reset & Try Again'),
+            ),
+          ],
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(allCorrect ? 'Great!' : 'OK'),
+          ),
         ],
       ),
     );
@@ -227,12 +326,13 @@ class HomeController extends GetxController {
 
     if (groupMarbles.length <= 2) {
       // Jika grup hanya 2 marble atau kurang, ungroup semua
+
       for (var groupMarble in groupMarbles) {
         updates.add(
           groupMarble.copyWith(
             groupId: null,
             isGrouped: false,
-            // Spread marbles sedikit dari posisi asli
+            isLocked: false,
             position:
                 groupMarble.position +
                 Offset(
@@ -248,6 +348,7 @@ class HomeController extends GetxController {
         marble.copyWith(
           groupId: null,
           isGrouped: false,
+          isLocked: false,
           // Move marble sedikit dari grup
           position:
               marble.position +
@@ -326,7 +427,7 @@ class HomeController extends GetxController {
   void initializeTargetCards() {
     targetCards.assignAll([
       TargetCardModel(id: 0, color: Colors.red),
-      TargetCardModel(id: 1, color: Colors.yellow),
+      TargetCardModel(id: 1, color: Colors.blue.shade400),
       TargetCardModel(id: 2, color: Colors.green),
     ]);
   }
@@ -387,7 +488,7 @@ class HomeController extends GetxController {
           groupId: null,
           isGrouped: false,
           isLocked: false,
-          color: Colors.deepPurple, // Reset to original color
+          color: Colors.deepPurple,
         ),
       );
     }
@@ -401,6 +502,8 @@ class HomeController extends GetxController {
 
     // Regenerate marble positions
     generateMarbles();
+
+    targetCards.refresh();
 
     Get.snackbar(
       'Game Reset',

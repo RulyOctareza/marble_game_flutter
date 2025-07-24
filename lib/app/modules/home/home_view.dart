@@ -99,80 +99,176 @@ class HomeView extends GetView<HomeController> {
                         final card = controller.targetCards[index];
                         return DragTarget<int>(
                           builder: (context, candidateData, rejectedData) {
-                            return Container(
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
                               width: 80,
                               height: 120,
                               decoration: BoxDecoration(
                                 color: card.hasGroup
-                                    ? card.color.withOpacity(0.8)
+                                    ? (controller.hasCheckedAnswer.value
+                                          ? (card.isCorrect.value
+                                                ? card.color.withOpacity(
+                                                    0.8,
+                                                  ) // Normal color if correct
+                                                : card.color.withOpacity(
+                                                    0.7,
+                                                  )) // Red background if wrong
+                                          : card.color.withOpacity(
+                                              0.8,
+                                            )) // Normal before check
                                     : card.color.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color:
-                                      candidateData.isNotEmpty && !card.hasGroup
-                                      ? Colors.white
-                                      : controller.hasCheckedAnswer.value &&
-                                            card.hasGroup
+                                      controller.hasCheckedAnswer.value &&
+                                          card.hasGroup
                                       ? (card.isCorrect.value
-                                            ? Colors.green
-                                            : Colors.red)
-                                      : card.hasGroup
-                                      ? card.color
-                                      : Colors.grey,
+                                            ? Colors
+                                                  .green // Green border if correct
+                                            : Colors.red) // Red border if wrong
+                                      : (candidateData.isNotEmpty &&
+                                                !card.hasGroup
+                                            ? Colors.white
+                                            : card.hasGroup
+                                            ? card.color
+                                            : Colors.grey),
                                   width:
                                       controller.hasCheckedAnswer.value &&
                                           card.hasGroup
-                                      ? 4
-                                      : candidateData.isNotEmpty
-                                      ? 3
-                                      : 2,
+                                      ? 4 // Thicker border after check answer
+                                      : (candidateData.isNotEmpty ? 3 : 2),
                                 ),
+                                // Add shadow for wrong answers
+                                boxShadow:
+                                    controller.hasCheckedAnswer.value &&
+                                        card.hasGroup &&
+                                        !card.isCorrect.value
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.red.withOpacity(0.5),
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                        ),
+                                      ]
+                                    : null,
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              child: Stack(
                                 children: [
-                                  if (card.hasGroup) ...[
-                                    Text(
-                                      '${controller.marbles.where((m) => m.groupId == card.assignedGroupId.value).length}',
-                                      style: const TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                  // Main content
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        if (card.hasGroup) ...[
+                                          // Show marble count with better styling
+                                          Text(
+                                            '${controller.marbles.where((m) => m.groupId == card.assignedGroupId.value).length}',
+                                            style: TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.bold,
+                                              color:
+                                                  controller
+                                                          .hasCheckedAnswer
+                                                          .value &&
+                                                      !card.isCorrect.value
+                                                  ? Colors.white
+                                                  : Colors.white,
+                                            ),
+                                          ),
+                                          const Text(
+                                            'marbles',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+
+                                          // Show status icons and text after check answer
+                                        ] else ...[
+                                          const SizedBox(height: 4),
+                                          const Icon(
+                                            Icons.add_circle_outline,
+                                            size: 30,
+                                            color: Colors.white54,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          const Text(
+                                            'Drop\ngroup here',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  // Big X overlay for wrong answers
+                                  if (controller.hasCheckedAnswer.value &&
+                                      card.hasGroup &&
+                                      !card.isCorrect.value) ...[
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.3,
+                                              ),
+                                              blurRadius: 4,
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.red,
+                                          size: 16,
+                                          weight: 800,
+                                        ),
                                       ),
                                     ),
-                                    const Text(
-                                      'marbles',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white70,
-                                      ),
-                                    ),
-                                    // Show correct/wrong icon only after check answer
-                                    if (controller.hasCheckedAnswer.value) ...[
-                                      const SizedBox(height: 4),
-                                      Icon(
-                                        card.isCorrect.value
-                                            ? Icons.check_circle
-                                            : Icons.cancel,
-                                        color: card.isCorrect.value
-                                            ? Colors.green
-                                            : Colors.red,
-                                        size: 20,
-                                      ),
-                                    ],
-                                  ] else ...[
-                                    const Icon(
-                                      Icons.add_circle_outline,
-                                      size: 30,
-                                      color: Colors.white54,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      'Drop\ngroup here',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white54,
+                                  ],
+                                  // Green check overlay for correct answers
+                                  if (controller.hasCheckedAnswer.value &&
+                                      card.hasGroup &&
+                                      card.isCorrect.value) ...[
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.3,
+                                              ),
+                                              blurRadius: 4,
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.check,
+                                          color: Colors.green,
+                                          size: 16,
+                                          weight: 800,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -209,14 +305,12 @@ class HomeView extends GetView<HomeController> {
                     ),
                   ),
 
-                  const SizedBox(width: 16),
-
                   // Play Area
                   Expanded(
                     child: Container(
                       key: controller.playAreaKey,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Obx(() {
@@ -310,7 +404,7 @@ class HomeView extends GetView<HomeController> {
                                             shape: BoxShape.circle,
                                             border: Border.all(
                                               color: marble.groupId != null
-                                                  ? Colors.yellow
+                                                  ? Colors.white
                                                   : isHighlighted && canAccept
                                                   ? Colors.green
                                                   : Colors.black,
@@ -323,7 +417,7 @@ class HomeView extends GetView<HomeController> {
                                             boxShadow: [
                                               if (marble.groupId != null)
                                                 BoxShadow(
-                                                  color: Colors.yellow
+                                                  color: Colors.white
                                                       .withOpacity(0.5),
                                                   blurRadius: 6,
                                                   spreadRadius: 1,
