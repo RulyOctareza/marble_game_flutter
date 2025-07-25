@@ -374,6 +374,7 @@ class HomeController extends GetxController {
     int correctCards = 0;
     int wrongCards = 0;
     int emptyCards = 0;
+    targetCards.refresh();
 
     for (var card in targetCards) {
       if (card.hasGroup) {
@@ -454,6 +455,7 @@ class HomeController extends GetxController {
             TextButton(
               onPressed: () {
                 Get.back();
+                resetGame(); // Reset game for next level
                 nextLevel(); // ✅ Go to next level
               },
               child: Text(
@@ -673,7 +675,7 @@ class HomeController extends GetxController {
     hasCheckedAnswer.value = false;
 
     // Reset level to 1
-    currentLevel.value = 1;
+    // currentLevel.value = 1;
 
     // Clear all groups and assignments
     final updates = <MarbleModel>[];
