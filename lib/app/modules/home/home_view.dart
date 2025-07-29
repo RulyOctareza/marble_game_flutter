@@ -96,14 +96,9 @@ class HomeView extends GetView<HomeController> {
               const SizedBox(height: 8),
 
               Container(
-                padding: EdgeInsets.only(
-                  top: 8,
-                  bottom: 8,
-                  left: 16,
-                  right: 16,
-                ),
+                padding: EdgeInsets.all(8.0),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF8B4CB8),
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -118,8 +113,20 @@ class HomeView extends GetView<HomeController> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF5A2D6F),
+                            color: Colors.deepPurple,
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF5A2D6F),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color.fromARGB(255, 66, 33, 123),
+                                blurRadius: 2,
+                                spreadRadius: 1,
+                                offset: const Offset(4, 5),
+                              ),
+                            ],
                           ),
                           child: Obx(
                             () => Text(
@@ -141,10 +148,10 @@ class HomeView extends GetView<HomeController> {
                           right: 0,
                           child: Center(
                             child: Container(
-                              width: 60,
+                              width: 90,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: Colors.deepPurple,
+                                color: const Color(0xFF5A2D6F),
                                 borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
@@ -581,18 +588,35 @@ class HomeView extends GetView<HomeController> {
                 children: [
                   // Reset Game button
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: controller.resetGame,
-                      style: ElevatedButton.styleFrom(
+                    child: GestureDetector(
+                      onTap: controller.resetGame,
+                      child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.orange,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange[300],
+                          border: Border.all(
+                            color: Colors.yellow[800]!,
+                            width: 0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orange,
+                              blurRadius: 1,
+                              spreadRadius: 2,
+                              offset: const Offset(1, 3),
+                            ),
+                          ],
                         ),
-                      ),
-                      child: const Text(
-                        'Reset Groups',
-                        style: TextStyle(fontSize: 14, color: Colors.white),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Reset Groups',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange[800],
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -602,18 +626,35 @@ class HomeView extends GetView<HomeController> {
                   // Check Answer button
                   Expanded(
                     flex: 2,
-                    child: ElevatedButton(
-                      onPressed: controller.checkAnswer,
-                      style: ElevatedButton.styleFrom(
+                    child: GestureDetector(
+                      onTap: controller.checkAnswer,
+                      child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green[300],
+                          border: Border.all(
+                            color: Colors.green[800]!,
+                            width: 0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green,
+                              blurRadius: 1,
+                              spreadRadius: 2,
+                              offset: const Offset(3, 3),
+                            ),
+                          ],
                         ),
-                      ),
-                      child: const Text(
-                        'Check Answer',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Check Answer',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[800],
+                          ),
+                        ),
                       ),
                     ),
                   ),
