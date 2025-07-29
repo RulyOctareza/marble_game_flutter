@@ -181,7 +181,7 @@ class HomeView extends GetView<HomeController> {
                             builder: (context, candidateData, rejectedData) {
                               return AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
-                                width: 90,
+                                width: 65,
                                 height: 120,
                                 decoration: BoxDecoration(
                                   color: card.hasGroup
@@ -190,24 +190,24 @@ class HomeView extends GetView<HomeController> {
                                             : card.color.withValues(alpha: 0.7))
                                       : card.color.withValues(alpha: 0.8),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: card.hasGroup
-                                        ? (card.isCorrect.value
-                                              ? Colors.green
-                                              : Colors.red)
-                                        : (candidateData.isNotEmpty &&
-                                                  !card.hasGroup
-                                              ? Colors.white
-                                              : card.hasGroup
-                                              ? card.color
-                                              : Colors.grey),
-                                    width:
-                                        controller.hasCheckedAnswer.value &&
-                                            card.hasGroup
-                                        ? 4
-                                        : (candidateData.isNotEmpty ? 3 : 2),
-                                  ),
 
+                                  // border: Border.all(
+                                  //   color: card.hasGroup
+                                  //       ? (card.isCorrect.value
+                                  //             ? Colors.green
+                                  //             : Colors.red)
+                                  //       : (candidateData.isNotEmpty &&
+                                  //                 !card.hasGroup
+                                  //             ? Colors.white
+                                  //             : card.hasGroup
+                                  //             ? card.color
+                                  //             : Colors.grey),
+                                  //   width:
+                                  //       controller.hasCheckedAnswer.value &&
+                                  //           card.hasGroup
+                                  //       ? 4
+                                  //       : (candidateData.isNotEmpty ? 3 : 2),
+                                  // ),
                                   boxShadow:
                                       controller.hasCheckedAnswer.value &&
                                           card.hasGroup &&

@@ -381,13 +381,13 @@ class HomeController extends GetxController {
     // yang paling pas di layar Anda.
     switch (cardId) {
       case 0:
-        return const Offset(-2, 60); // Titik untuk kartu paling atas
+        return const Offset(-1, 60); // Titik untuk kartu paling atas
       case 1:
-        return const Offset(-2, 220); // Titik untuk kartu tengah
+        return const Offset(-1, 220); // Titik untuk kartu tengah
       case 2:
-        return const Offset(-2, 360); // Titik untuk kartu paling bawah
+        return const Offset(-1, 360); // Titik untuk kartu paling bawah
       default:
-        return const Offset(-2, 50);
+        return const Offset(-1, 50);
     }
   }
 
