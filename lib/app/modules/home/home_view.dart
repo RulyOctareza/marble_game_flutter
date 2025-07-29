@@ -136,22 +136,36 @@ class HomeView extends GetView<HomeController> {
 
                         // ✅ Equals sign positioned at center bottom
                         Positioned(
-                          bottom: -15,
+                          bottom: -25,
                           left: 0,
                           right: 0,
                           child: Center(
                             child: Container(
-                              width: 40,
-                              height: 30,
+                              width: 60,
+                              height: 40,
                               decoration: BoxDecoration(
-                                color: Colors.black,
+                                color: Colors.deepPurple,
                                 borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color.fromARGB(
+                                      255,
+                                      66,
+                                      33,
+                                      123,
+                                    ).withValues(alpha: 1),
+                                    blurRadius: 2,
+                                    spreadRadius: 2,
+                                    offset: const Offset(1, 3),
+                                  ),
+                                ],
                               ),
+
                               child: const Center(
                                 child: Text(
                                   '=',
                                   style: TextStyle(
-                                    fontSize: 24,
+                                    fontSize: 30,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
