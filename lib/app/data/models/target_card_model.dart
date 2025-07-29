@@ -6,12 +6,14 @@ class TargetCardModel {
   final Color color;
   final Rx<int?> assignedGroupId; // ID grup yang ditugaskan ke kartu ini
   final RxBool isCorrect;
+  
 
   TargetCardModel({
     required this.id,
     required this.color,
     int? groupId,
     bool? isCorrect,
+
   }) : assignedGroupId = Rx<int?>(groupId),
        isCorrect = (isCorrect ?? false).obs;
 

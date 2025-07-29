@@ -275,7 +275,7 @@ class HomeView extends GetView<HomeController> {
                                         !card.isCorrect.value) ...[
                                       Positioned(
                                         top: 8,
-                                        right: 8,
+                                        left: 20,
                                         child: Container(
                                           width: 20,
                                           height: 20,
@@ -300,39 +300,39 @@ class HomeView extends GetView<HomeController> {
                                           ),
                                         ),
                                       ),
-                                      Positioned(
-                                        top: 12,
-                                        left: 6,
-                                        child: Text(
-                                          'WRONG',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.red,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
+                                      // Positioned(
+                                      //   top: 12,
+                                      //   left: 6,
+                                      //   child: Text(
+                                      //     'WRONG',
+                                      //     style: const TextStyle(
+                                      //       fontSize: 12,
+                                      //       color: Colors.red,
+                                      //       fontWeight: FontWeight.bold,
+                                      //     ),
+                                      //     textAlign: TextAlign.center,
+                                      //   ),
+                                      // ),
                                     ],
 
                                     if (card.hasGroup &&
                                         card.isCorrect.value) ...[
-                                      Positioned(
-                                        top: 12,
-                                        left: 6,
-                                        child: Text(
-                                          'CORRECT',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.green,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
+                                      // Positioned(
+                                      //   top: 12,
+                                      //   left: 6,
+                                      //   child: Text(
+                                      //     'CORRECT',
+                                      //     style: const TextStyle(
+                                      //       fontSize: 12,
+                                      //       color: Colors.green,
+                                      //       fontWeight: FontWeight.bold,
+                                      //     ),
+                                      //     textAlign: TextAlign.center,
+                                      //   ),
+                                      // ),
                                       Positioned(
                                         top: 8,
-                                        right: 8,
+                                        left: 20,
                                         child: Container(
                                           width: 20,
                                           height: 20,
@@ -508,12 +508,12 @@ class HomeView extends GetView<HomeController> {
                                                       if (marble.groupId !=
                                                           null)
                                                         BoxShadow(
-                                                          color: Colors.white
+                                                          color: Colors.black
                                                               .withValues(
-                                                                alpha: 0.5,
+                                                                alpha: 1,
                                                               ),
-                                                          blurRadius: 6,
-                                                          spreadRadius: 1,
+                                                          blurRadius: 2,
+                                                          spreadRadius: 0,
                                                         ),
                                                       if (isHighlighted &&
                                                           canAccept)

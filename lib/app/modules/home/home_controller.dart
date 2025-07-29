@@ -206,27 +206,39 @@ class HomeController extends GetxController {
   }
 
   // Mengassign grup kelereng ke kartu target (allow any group, even wrong ones)
+  // Ganti fungsi lama dengan yang ini
+
+  // Di dalam HomeController, perbarui metode ini
   void assignGroupToCard(int groupId, int cardId) {
     final targetCard = targetCards.firstWhere((card) => card.id == cardId);
-    if (targetCard.hasGroup) return; // Kartu sudah memiliki grup
+    if (targetCard.hasGroup) return;
 
     final groupMarbles = marbles.where((m) => m.groupId == groupId).toList();
+    if (groupMarbles.isEmpty) return;
 
-    // Allow assignment regardless of correct count - let user make mistakes
-    if (groupMarbles.isEmpty) return; // Must have at least some marbles
-
-    final correctCount =
-        problem.value.dividend ~/ problem.value.divisor; // Should be 8
+    final correctCount = problem.value.dividend ~/ problem.value.divisor;
     final isCorrect = groupMarbles.length == correctCount;
 
-    // Update status kartu
     targetCard.assignGroup(groupId);
     targetCard.isCorrect.value = isCorrect;
 
-    // Update semua kelereng dalam grup
     final updates = <MarbleModel>[];
-    for (var marble in groupMarbles) {
-      updates.add(marble.copyWith(color: targetCard.color, isLocked: true));
+
+    // ✅ UBAH BARIS INI: Gunakan titik snap, bukan posisi kelereng
+    final basePosition = _getSnapPointForCard(cardId);
+
+    for (int i = 0; i < groupMarbles.length; i++) {
+      final marble = groupMarbles[i];
+      final newPosition =
+          basePosition + Offset((i % 4) * 35.0, (i ~/ 4) * 35.0);
+
+      updates.add(
+        marble.copyWith(
+          color: targetCard.color,
+          isLocked: true,
+          position: newPosition,
+        ),
+      );
     }
 
     _updateMarbles(updates);
@@ -363,6 +375,21 @@ class HomeController extends GetxController {
   //     ),
   //   );
   // }
+
+  Offset _getSnapPointForCard(int cardId) {
+    // Anda dapat menyesuaikan nilai Offset ini untuk mendapatkan posisi
+    // yang paling pas di layar Anda.
+    switch (cardId) {
+      case 0:
+        return const Offset(-2, 60); // Titik untuk kartu paling atas
+      case 1:
+        return const Offset(-2, 220); // Titik untuk kartu tengah
+      case 2:
+        return const Offset(-2, 360); // Titik untuk kartu paling bawah
+      default:
+        return const Offset(-2, 50);
+    }
+  }
 
   void checkAnswer() {
     // ✅ Don't set hasCheckedAnswer anymore since feedback is instant
@@ -607,6 +634,7 @@ class HomeController extends GetxController {
   // ✅ Method to manually change problem (for testing)
   void changeProblem() {
     startNewGame();
+    targetCards.refresh();
   }
 
   void initializeTargetCards() {

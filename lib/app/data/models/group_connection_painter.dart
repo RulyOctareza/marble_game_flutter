@@ -24,7 +24,7 @@ class GroupConnectionPainter extends CustomPainter {
 
     // Gambar garis untuk setiap grup
     groups.forEach((groupId, groupMarbles) {
-      if (groupMarbles.length > 1) {
+      if (groupMarbles.length > 1 && !groupMarbles.first.isLocked) {
         // Iterasi untuk setiap pasangan kelereng dalam grup
         for (int i = 0; i < groupMarbles.length; i++) {
           for (int j = i + 1; j < groupMarbles.length; j++) {
