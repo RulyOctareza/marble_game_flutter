@@ -13,7 +13,7 @@ class MarbleModel {
     required this.id,
     required this.position,
     this.groupId,
-    this.color = Colors.deepPurple,
+    this.color = Colors.blue,
     this.isGrouped = false,
     this.isLocked = false,
   });

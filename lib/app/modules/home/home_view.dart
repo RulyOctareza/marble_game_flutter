@@ -181,7 +181,7 @@ class HomeView extends GetView<HomeController> {
                               return AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
                                 width: 90,
-                                height: 120, // Reduced from 130 to 120
+                                height: 120,
                                 decoration: BoxDecoration(
                                   color: card.hasGroup
                                       ? (card.isCorrect.value
@@ -482,7 +482,7 @@ class HomeView extends GetView<HomeController> {
                                               shape: BoxShape.circle,
                                               border: Border.all(
                                                 color: marble.groupId != null
-                                                    ? Colors.white
+                                                    ? Colors.transparent
                                                     : isHighlighted && canAccept
                                                     ? Colors.green
                                                     : Colors.black,

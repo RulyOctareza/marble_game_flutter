@@ -24,6 +24,16 @@ class HomeController extends GetxController {
   final currentLevel = 1.obs;
   final totalLevels = 10.obs;
 
+  final List<Color> groupColors = [
+    Colors.deepPurpleAccent,
+    Colors.purple,
+    Colors.red,
+    Colors.redAccent,
+    Colors.green,
+    Colors.teal,
+    Colors.brown,
+  ];
+
   @override
   void onInit() {
     super.onInit();
@@ -50,7 +60,7 @@ class HomeController extends GetxController {
           groupId: null,
           isGrouped: false,
           isLocked: false,
-          color: Colors.deepPurple,
+          color: Colors.blue,
         ),
       );
     }
@@ -113,6 +123,8 @@ class HomeController extends GetxController {
     marbles.assignAll(newList);
   }
 
+  // lib/app/modules/home/home_controller.dart
+
   // Mengelompokkan kelereng saat di-drag satu sama lain
   void groupMarbles(int draggedMarbleId, int targetMarbleId) {
     if (draggedMarbleId == targetMarbleId) return;
@@ -120,74 +132,60 @@ class HomeController extends GetxController {
     final draggedMarble = marbles.firstWhere((m) => m.id == draggedMarbleId);
     final targetMarble = marbles.firstWhere((m) => m.id == targetMarbleId);
 
-    // Jika target sudah di-lock, batalkan
     if (targetMarble.isLocked || draggedMarble.isLocked) return;
 
-    // final correctCount = problem.dividend ~/ problem.divisor; // 24 ÷ 3 = 8
-
     // Tentukan group ID yang akan digunakan
-    int? newGroupId;
-    if (targetMarble.groupId != null) {
-      newGroupId = targetMarble.groupId;
-    } else if (draggedMarble.groupId != null) {
-      newGroupId = draggedMarble.groupId;
-    } else {
-      // Generate new group ID
-      newGroupId = _generateNewGroupId();
-    }
+    int newGroupId =
+        targetMarble.groupId ?? draggedMarble.groupId ?? _generateNewGroupId();
 
-    // Hitung jumlah marble yang akan ada dalam grup setelah merge
+    // Gabungkan semua ID unik dari grup yang terlibat
     final Set<int> marbleIdsInNewGroup = {};
-
-    // Add target marble and its group
-    if (targetMarble.groupId != null) {
-      marbleIdsInNewGroup.addAll(
-        marbles
-            .where((m) => m.groupId == targetMarble.groupId)
-            .map((m) => m.id),
-      );
-    } else {
-      marbleIdsInNewGroup.add(targetMarble.id);
+    for (var marble in [draggedMarble, targetMarble]) {
+      if (marble.groupId != null) {
+        marbleIdsInNewGroup.addAll(
+          marbles.where((m) => m.groupId == marble.groupId).map((m) => m.id),
+        );
+      } else {
+        marbleIdsInNewGroup.add(marble.id);
+      }
     }
 
-    // Add dragged marble and its group
-    if (draggedMarble.groupId != null) {
-      marbleIdsInNewGroup.addAll(
-        marbles
-            .where((m) => m.groupId == draggedMarble.groupId)
-            .map((m) => m.id),
-      );
-    } else {
-      marbleIdsInNewGroup.add(draggedMarble.id);
+    // ✅ Tentukan warna baru berdasarkan jumlah total anggota grup
+    final groupSize = marbleIdsInNewGroup.length;
+    Color newColor = Colors.blue; // Warna default
+    if (groupSize >= 2) {
+      // Ambil warna dari palet, jika lebih besar dari palet, gunakan warna terakhir
+      newColor = groupColors[min(groupSize - 2, groupColors.length - 1)];
     }
 
-    // Jika total melebihi jawaban yang benar, batalkan
-    // Tidak perlu membatasi jumlah marble dalam satu grup, jadi hapus pengecekan ini
-    // Sekarang, grup bisa berisi lebih dari correctCount marble
-
-    // Update semua marble yang terlibat
+    // ✅ Logika baru untuk posisi kelopak bunga (flower petal)
     final updates = <MarbleModel>[];
     final basePosition = targetMarble.position;
-    int gridIndex = 0;
+    final double radius = 14.0 + (groupSize * 2.5);
+    int i = 0;
 
     for (int marbleId in marbleIdsInNewGroup) {
       final marble = marbles.firstWhere((m) => m.id == marbleId);
-      final newPosition =
-          basePosition +
-          Offset(
-            (gridIndex % 4) *
-                25.0, // 4 marble per row, spacing 25px untuk tidak tumpang tindih
-            (gridIndex ~/ 4) * 25.0, // spacing 25px between rows
-          );
+      Offset newPosition;
+
+      if (groupSize <= 1) {
+        newPosition = basePosition;
+      } else {
+        // Hitung sudut untuk setiap kelereng agar membentuk lingkaran
+        final angle = (2 * pi / groupSize) * i;
+        newPosition =
+            basePosition + Offset(radius * cos(angle), radius * sin(angle));
+      }
 
       updates.add(
         marble.copyWith(
           groupId: newGroupId,
           isGrouped: true,
           position: newPosition,
+          color: newColor, // Terapkan warna baru
         ),
       );
-      gridIndex++;
+      i++;
     }
 
     _updateMarbles(updates);
@@ -374,7 +372,6 @@ class HomeController extends GetxController {
     int correctCards = 0;
     int wrongCards = 0;
     int emptyCards = 0;
-    targetCards.refresh();
 
     for (var card in targetCards) {
       if (card.hasGroup) {
@@ -455,7 +452,6 @@ class HomeController extends GetxController {
             TextButton(
               onPressed: () {
                 Get.back();
-                resetGame(); // Reset game for next level
                 nextLevel(); // ✅ Go to next level
               },
               child: Text(
@@ -490,17 +486,16 @@ class HomeController extends GetxController {
 
     final updates = <MarbleModel>[];
     if (marble.groupId != null) {
-      // Move entire group
       final groupMarbles = marbles
           .where((m) => m.groupId == marble.groupId)
           .toList();
-      for (int i = 0; i < groupMarbles.length; i++) {
+      final groupSize = groupMarbles.length;
+      final double radius = 14.0 + (groupSize * 2.5);
+
+      for (int i = 0; i < groupSize; i++) {
+        final angle = (2 * pi / groupSize) * i;
         final newPosition =
-            clampedPosition +
-            Offset(
-              (i % 4) * 25.0, // 4 marble per row, spacing 25px
-              (i ~/ 4) * 25.0, // spacing 25px between rows
-            );
+            clampedPosition + Offset(radius * cos(angle), radius * sin(angle));
         updates.add(groupMarbles[i].copyWith(position: newPosition));
       }
     } else {
@@ -590,17 +585,16 @@ class HomeController extends GetxController {
 
     final updates = <MarbleModel>[];
     if (marble.groupId != null) {
-      // Move entire group during drag
       final groupMarbles = marbles
           .where((m) => m.groupId == marble.groupId)
           .toList();
-      for (int i = 0; i < groupMarbles.length; i++) {
+      final groupSize = groupMarbles.length;
+      final double radius = 14.0 + (groupSize * 2.5);
+
+      for (int i = 0; i < groupSize; i++) {
+        final angle = (2 * pi / groupSize) * i;
         final newPosition =
-            clampedPosition +
-            Offset(
-              (i % 4) * 25.0, // spacing 25px untuk tidak tumpang tindih
-              (i ~/ 4) * 25.0,
-            );
+            clampedPosition + Offset(radius * cos(angle), radius * sin(angle));
         updates.add(groupMarbles[i].copyWith(position: newPosition));
       }
     } else {
@@ -675,7 +669,7 @@ class HomeController extends GetxController {
     hasCheckedAnswer.value = false;
 
     // Reset level to 1
-    // currentLevel.value = 1;
+    currentLevel.value = 1;
 
     // Clear all groups and assignments
     final updates = <MarbleModel>[];
@@ -685,7 +679,7 @@ class HomeController extends GetxController {
           groupId: null,
           isGrouped: false,
           isLocked: false,
-          color: Colors.deepPurple,
+          color: Colors.blue,
         ),
       );
     }
