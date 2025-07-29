@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:marble_game/app/data/models/group_connection_painter.dart';
 import 'home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -395,136 +396,163 @@ class HomeView extends GetView<HomeController> {
                         ),
                         child: Obx(() {
                           return Stack(
-                            children: controller.marbles.map((marble) {
-                              return Positioned(
-                                left: marble.position.dx,
-                                top: marble.position.dy,
-                                child: DragTarget<int>(
-                                  builder: (context, candidateData, rejectedData) {
-                                    final isHighlighted =
-                                        candidateData.isNotEmpty;
-                                    final canAccept =
-                                        !marble.isLocked &&
-                                        candidateData.isNotEmpty &&
-                                        candidateData.first != marble.id;
+                            children: [
+                              ...controller.marbles.map((marble) {
+                                return Positioned(
+                                  left: marble.position.dx,
+                                  top: marble.position.dy,
+                                  child: DragTarget<int>(
+                                    builder:
+                                        (context, candidateData, rejectedData) {
+                                          final isHighlighted =
+                                              candidateData.isNotEmpty;
+                                          final canAccept =
+                                              !marble.isLocked &&
+                                              candidateData.isNotEmpty &&
+                                              candidateData.first != marble.id;
 
-                                    return GestureDetector(
-                                      onDoubleTap: () {
-                                        controller.ungroupMarble(marble.id);
-                                      },
-                                      child: AnimatedContainer(
-                                        duration: const Duration(
-                                          milliseconds: 200,
-                                        ),
-                                        transform: isHighlighted
-                                            ? (Matrix4.identity()..scale(1.1))
-                                            : Matrix4.identity(),
-                                        child: Draggable<int>(
-                                          data: marble.id,
-                                          feedback: Container(
-                                            width: 50,
-                                            height: 50,
-                                            decoration: BoxDecoration(
-                                              color: marble.color.withValues(
-                                                alpha: 0.8,
-                                              ),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white,
-                                                width: 3,
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withValues(alpha: 0.4),
-                                                  blurRadius: 15,
-                                                  spreadRadius: 2,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          childWhenDragging: Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              color: marble.color.withValues(
-                                                alpha: 0.3,
-                                              ),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.grey,
-                                                width: 2,
-                                              ),
-                                            ),
-                                          ),
-                                          onDragUpdate: (details) {
-                                            if (!marble.isLocked) {
-                                              controller
-                                                  .updateMarblePositionDuringDrag(
-                                                    marble.id,
-                                                    details.globalPosition,
-                                                  );
-                                            }
-                                          },
-                                          onDragEnd: (details) {
-                                            if (!marble.isLocked) {
-                                              controller.updateMarblePosition(
+                                          return GestureDetector(
+                                            onDoubleTap: () {
+                                              controller.ungroupMarble(
                                                 marble.id,
-                                                details.offset,
                                               );
-                                            }
-                                          },
-                                          child: Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              color: marble.color,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: marble.groupId != null
-                                                    ? Colors.transparent
-                                                    : isHighlighted && canAccept
-                                                    ? Colors.green
-                                                    : Colors.black,
-                                                width: marble.groupId != null
-                                                    ? 3.0
-                                                    : isHighlighted && canAccept
-                                                    ? 2.5
-                                                    : 1.5,
+                                            },
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                milliseconds: 200,
                                               ),
-                                              boxShadow: [
-                                                if (marble.groupId != null)
-                                                  BoxShadow(
-                                                    color: Colors.white
-                                                        .withValues(alpha: 0.5),
-                                                    blurRadius: 6,
-                                                    spreadRadius: 1,
+                                              transform: isHighlighted
+                                                  ? (Matrix4.identity()
+                                                      ..scale(1.1))
+                                                  : Matrix4.identity(),
+                                              child: Draggable<int>(
+                                                data: marble.id,
+                                                feedback: Container(
+                                                  width: 50,
+                                                  height: 50,
+                                                  decoration: BoxDecoration(
+                                                    color: marble.color
+                                                        .withValues(alpha: 0.8),
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: Colors.white,
+                                                      width: 3,
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black
+                                                            .withValues(
+                                                              alpha: 0.4,
+                                                            ),
+                                                        blurRadius: 15,
+                                                        spreadRadius: 2,
+                                                      ),
+                                                    ],
                                                   ),
-                                                if (isHighlighted && canAccept)
-                                                  BoxShadow(
-                                                    color: Colors.green
+                                                ),
+                                                childWhenDragging: Container(
+                                                  width: 40,
+                                                  height: 40,
+                                                  decoration: BoxDecoration(
+                                                    color: marble.color
                                                         .withValues(alpha: 0.3),
-                                                    blurRadius: 8,
-                                                    spreadRadius: 2,
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: Colors.grey,
+                                                      width: 2,
+                                                    ),
                                                   ),
-                                              ],
+                                                ),
+                                                onDragUpdate: (details) {
+                                                  if (!marble.isLocked) {
+                                                    controller
+                                                        .updateMarblePositionDuringDrag(
+                                                          marble.id,
+                                                          details
+                                                              .globalPosition,
+                                                        );
+                                                  }
+                                                },
+                                                onDragEnd: (details) {
+                                                  if (!marble.isLocked) {
+                                                    controller
+                                                        .updateMarblePosition(
+                                                          marble.id,
+                                                          details.offset,
+                                                        );
+                                                  }
+                                                },
+                                                child: Container(
+                                                  width: 40,
+                                                  height: 40,
+                                                  decoration: BoxDecoration(
+                                                    color: marble.color,
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color:
+                                                          marble.groupId != null
+                                                          ? Colors.transparent
+                                                          : isHighlighted &&
+                                                                canAccept
+                                                          ? Colors.green
+                                                          : Colors.black,
+                                                      width:
+                                                          marble.groupId != null
+                                                          ? 3.0
+                                                          : isHighlighted &&
+                                                                canAccept
+                                                          ? 2.5
+                                                          : 1.5,
+                                                    ),
+                                                    boxShadow: [
+                                                      if (marble.groupId !=
+                                                          null)
+                                                        BoxShadow(
+                                                          color: Colors.white
+                                                              .withValues(
+                                                                alpha: 0.5,
+                                                              ),
+                                                          blurRadius: 6,
+                                                          spreadRadius: 1,
+                                                        ),
+                                                      if (isHighlighted &&
+                                                          canAccept)
+                                                        BoxShadow(
+                                                          color: Colors.green
+                                                              .withValues(
+                                                                alpha: 0.3,
+                                                              ),
+                                                          blurRadius: 8,
+                                                          spreadRadius: 2,
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  onWillAcceptWithDetails: (data) =>
-                                      !marble.isLocked && data != marble.id,
-                                  onAcceptWithDetails: (details) {
-                                    controller.groupMarbles(
-                                      details.data,
-                                      marble.id,
-                                    );
-                                  },
+                                          );
+                                        },
+                                    onWillAcceptWithDetails: (data) =>
+                                        !marble.isLocked && data != marble.id,
+                                    onAcceptWithDetails: (details) {
+                                      controller.groupMarbles(
+                                        details.data,
+                                        marble.id,
+                                      );
+                                    },
+                                  ),
+                                );
+                              }),
+                              IgnorePointer(
+                                ignoring: true,
+                                child: CustomPaint(
+                                  painter: GroupConnectionPainter(
+                                    marbles: controller.marbles.toList(),
+                                  ),
+                                  size: Size.infinite,
                                 ),
-                              );
-                            }).toList(),
+                              ),
+                            ],
                           );
                         }),
                       ),
