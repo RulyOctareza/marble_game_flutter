@@ -4,6 +4,9 @@
 
 A modern Flutter project for a marble grouping game.
 
+## Live Playing - Game
+https://marble-game-flutter.vercel.app/#/home
+
 ## Features
 
 - 🎮 Interactive marble grouping gameplay
