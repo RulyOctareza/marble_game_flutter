@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:marble_game/app/data/models/group_connection_painter.dart';
-import 'home_controller.dart';
 
+import '../../data/models/group_connection_painter.dart';
+import '../home/home_controller.dart';
+import '../home/widgets/game_header.dart';
+import '../home/widgets/problem_display.dart';
+import '../home/widgets/target_card.dart';
+import '../home/widgets/marble_widget.dart';
+import '../home/widgets/game_action_buttons.dart';
+
+/// Main view for the Marble Game home screen
+/// Displays the game interface and handles user interactions
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
@@ -10,659 +18,135 @@ class HomeView extends GetView<HomeController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.purple[200],
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
-                ),
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.purple,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: const Text(
-                  'Find the result of the division',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+              // Game header with title and level info
+              Obx(() => GameHeader(
+                currentLevel: controller.currentLevel.value,
+                totalLevels: controller.totalLevels.value,
+                onNewProblem: controller.changeProblem,
+              )),
 
               const SizedBox(height: 8),
 
-              // ✅ Level indicator dan New Problem button
-              Row(
-                children: [
-                  // Level indicator
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Obx(
-                        () => Column(
-                          children: [
-                            Text(
-                              'Level ${controller.currentLevel.value}/${controller.totalLevels.value}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.deepPurple,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // New Problem button
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: controller.changeProblem,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.purple,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'New Problem',
-                        style: TextStyle(fontSize: 14, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              Container(
-                padding: EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.deepPurple,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFF5A2D6F),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color.fromARGB(255, 66, 33, 123),
-                                blurRadius: 2,
-                                spreadRadius: 1,
-                                offset: const Offset(4, 5),
-                              ),
-                            ],
-                          ),
-                          child: Obx(
-                            () => Text(
-                              '${controller.problem.value.dividend} ÷ ${controller.problem.value.divisor}',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-
-                        // ✅ Equals sign positioned at center bottom
-                        Positioned(
-                          bottom: -25,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: Container(
-                              width: 90,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF5A2D6F),
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color.fromARGB(
-                                      255,
-                                      66,
-                                      33,
-                                      123,
-                                    ).withValues(alpha: 1),
-                                    blurRadius: 2,
-                                    spreadRadius: 2,
-                                    offset: const Offset(1, 3),
-                                  ),
-                                ],
-                              ),
-
-                              child: const Center(
-                                child: Text(
-                                  '=',
-                                  style: TextStyle(
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              // Math problem display
+              Obx(() => ProblemDisplay(
+                dividend: controller.problem.value.dividend,
+                divisor: controller.problem.value.divisor,
+              )),
 
               const SizedBox(height: 12),
 
+              // Main game area with target cards and marbles
               Expanded(
                 child: Row(
                   children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: List.generate(
-                        controller.targetCards.length,
-                        (index) => Obx(() {
-                          final card = controller.targetCards[index];
-                          return DragTarget<int>(
-                            builder: (context, candidateData, rejectedData) {
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                width: 65,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  color: card.hasGroup
-                                      ? (card.isCorrect.value
-                                            ? card.color.withValues(alpha: 0.8)
-                                            : card.color.withValues(alpha: 0.7))
-                                      : card.color.withValues(alpha: 0.8),
-                                  borderRadius: BorderRadius.circular(12),
+                    // Target cards column
+                    _buildTargetCardsColumn(),
 
-                                  // border: Border.all(
-                                  //   color: card.hasGroup
-                                  //       ? (card.isCorrect.value
-                                  //             ? Colors.green
-                                  //             : Colors.red)
-                                  //       : (candidateData.isNotEmpty &&
-                                  //                 !card.hasGroup
-                                  //             ? Colors.white
-                                  //             : card.hasGroup
-                                  //             ? card.color
-                                  //             : Colors.grey),
-                                  //   width:
-                                  //       controller.hasCheckedAnswer.value &&
-                                  //           card.hasGroup
-                                  //       ? 4
-                                  //       : (candidateData.isNotEmpty ? 3 : 2),
-                                  // ),
-                                  boxShadow:
-                                      controller.hasCheckedAnswer.value &&
-                                          card.hasGroup &&
-                                          !card.isCorrect.value
-                                      ? [
-                                          BoxShadow(
-                                            color: Colors.red.withValues(
-                                              alpha: 0.5,
-                                            ),
-                                            blurRadius: 12,
-                                            spreadRadius: 4,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Stack(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          if (card.hasGroup) ...[
-                                            Text(
-                                              '${controller.marbles.where((m) => m.groupId == card.assignedGroupId.value).length}',
-                                              style: TextStyle(
-                                                fontSize: 28,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            const Text(
-                                              'Marbles',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.white70,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ] else ...[
-                                            const SizedBox(height: 4),
-                                            const Icon(
-                                              Icons.add_circle_outline,
-                                              size: 30,
-                                              color: Colors.white54,
-                                            ),
-                                            const SizedBox(height: 4),
-                                            const Text(
-                                              'Drop\ngroup here',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-
-                                    if (card.hasGroup &&
-                                        !card.isCorrect.value) ...[
-                                      Positioned(
-                                        top: 8,
-                                        left: 20,
-                                        child: Container(
-                                          width: 20,
-                                          height: 20,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.3,
-                                                ),
-                                                blurRadius: 4,
-                                                spreadRadius: 1,
-                                              ),
-                                            ],
-                                          ),
-                                          child: const Icon(
-                                            Icons.close,
-                                            color: Colors.red,
-                                            size: 16,
-                                            weight: 800,
-                                          ),
-                                        ),
-                                      ),
-                                      // Positioned(
-                                      //   top: 12,
-                                      //   left: 6,
-                                      //   child: Text(
-                                      //     'WRONG',
-                                      //     style: const TextStyle(
-                                      //       fontSize: 12,
-                                      //       color: Colors.red,
-                                      //       fontWeight: FontWeight.bold,
-                                      //     ),
-                                      //     textAlign: TextAlign.center,
-                                      //   ),
-                                      // ),
-                                    ],
-
-                                    if (card.hasGroup &&
-                                        card.isCorrect.value) ...[
-                                      // Positioned(
-                                      //   top: 12,
-                                      //   left: 6,
-                                      //   child: Text(
-                                      //     'CORRECT',
-                                      //     style: const TextStyle(
-                                      //       fontSize: 12,
-                                      //       color: Colors.green,
-                                      //       fontWeight: FontWeight.bold,
-                                      //     ),
-                                      //     textAlign: TextAlign.center,
-                                      //   ),
-                                      // ),
-                                      Positioned(
-                                        top: 8,
-                                        left: 20,
-                                        child: Container(
-                                          width: 20,
-                                          height: 20,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.3,
-                                                ),
-                                                blurRadius: 4,
-                                                spreadRadius: 1,
-                                              ),
-                                            ],
-                                          ),
-                                          child: const Icon(
-                                            Icons.check,
-                                            color: Colors.green,
-                                            size: 16,
-                                            weight: 800,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              );
-                            },
-                            onWillAcceptWithDetails: (details) {
-                              if (card.hasGroup) return false;
-
-                              final marbleId = details.data;
-                              final marble = controller.marbles.firstWhere(
-                                (m) => m.id == marbleId,
-                              );
-
-                              return marble.groupId != null;
-                            },
-                            onAcceptWithDetails: (details) {
-                              final marbleId = details.data;
-                              final marble = controller.marbles.firstWhere(
-                                (m) => m.id == marbleId,
-                              );
-                              controller.assignGroupToCard(
-                                marble.groupId!,
-                                card.id,
-                              );
-                            },
-                          );
-                        }),
-                      ),
-                    ),
-
-                    Expanded(
-                      child: Container(
-                        key: controller.playAreaKey,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Obx(() {
-                          return Stack(
-                            children: [
-                              ...controller.marbles.map((marble) {
-                                return Positioned(
-                                  left: marble.position.dx,
-                                  top: marble.position.dy,
-                                  child: DragTarget<int>(
-                                    builder:
-                                        (context, candidateData, rejectedData) {
-                                          final isHighlighted =
-                                              candidateData.isNotEmpty;
-                                          final canAccept =
-                                              !marble.isLocked &&
-                                              candidateData.isNotEmpty &&
-                                              candidateData.first != marble.id;
-
-                                          return GestureDetector(
-                                            onDoubleTap: () {
-                                              controller.ungroupMarble(
-                                                marble.id,
-                                              );
-                                            },
-                                            child: AnimatedContainer(
-                                              duration: const Duration(
-                                                milliseconds: 200,
-                                              ),
-                                              transform: isHighlighted
-                                                  ? (Matrix4.identity()
-                                                      ..scale(1.1))
-                                                  : Matrix4.identity(),
-                                              child: Draggable<int>(
-                                                data: marble.id,
-                                                feedback: Container(
-                                                  width: 50,
-                                                  height: 50,
-                                                  decoration: BoxDecoration(
-                                                    color: marble.color
-                                                        .withValues(alpha: 0.8),
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: Colors.white,
-                                                      width: 3,
-                                                    ),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: Colors.black
-                                                            .withValues(
-                                                              alpha: 0.4,
-                                                            ),
-                                                        blurRadius: 15,
-                                                        spreadRadius: 2,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                childWhenDragging: Container(
-                                                  width: 40,
-                                                  height: 40,
-                                                  decoration: BoxDecoration(
-                                                    color: marble.color
-                                                        .withValues(alpha: 0.3),
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: Colors.grey,
-                                                      width: 2,
-                                                    ),
-                                                  ),
-                                                ),
-                                                onDragUpdate: (details) {
-                                                  if (!marble.isLocked) {
-                                                    controller
-                                                        .updateMarblePositionDuringDrag(
-                                                          marble.id,
-                                                          details
-                                                              .globalPosition,
-                                                        );
-                                                  }
-                                                },
-                                                onDragEnd: (details) {
-                                                  if (!marble.isLocked) {
-                                                    controller
-                                                        .updateMarblePosition(
-                                                          marble.id,
-                                                          details.offset,
-                                                        );
-                                                  }
-                                                },
-                                                child: Container(
-                                                  width: 40,
-                                                  height: 40,
-                                                  decoration: BoxDecoration(
-                                                    color: marble.color,
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color:
-                                                          marble.groupId != null
-                                                          ? Colors.transparent
-                                                          : isHighlighted &&
-                                                                canAccept
-                                                          ? Colors.green
-                                                          : Colors.black,
-                                                      width:
-                                                          marble.groupId != null
-                                                          ? 3.0
-                                                          : isHighlighted &&
-                                                                canAccept
-                                                          ? 2.5
-                                                          : 1.5,
-                                                    ),
-                                                    boxShadow: [
-                                                      if (marble.groupId !=
-                                                          null)
-                                                        BoxShadow(
-                                                          color: Colors.black
-                                                              .withValues(
-                                                                alpha: 1,
-                                                              ),
-                                                          blurRadius: 2,
-                                                          spreadRadius: 0,
-                                                        ),
-                                                      if (isHighlighted &&
-                                                          canAccept)
-                                                        BoxShadow(
-                                                          color: Colors.green
-                                                              .withValues(
-                                                                alpha: 0.3,
-                                                              ),
-                                                          blurRadius: 8,
-                                                          spreadRadius: 2,
-                                                        ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                    onWillAcceptWithDetails: (data) =>
-                                        !marble.isLocked && data != marble.id,
-                                    onAcceptWithDetails: (details) {
-                                      controller.groupMarbles(
-                                        details.data,
-                                        marble.id,
-                                      );
-                                    },
-                                  ),
-                                );
-                              }),
-                              IgnorePointer(
-                                ignoring: true,
-                                child: CustomPaint(
-                                  painter: GroupConnectionPainter(
-                                    marbles: controller.marbles.toList(),
-                                  ),
-                                  size: Size.infinite,
-                                ),
-                              ),
-                            ],
-                          );
-                        }),
-                      ),
-                    ),
+                    // Play area with marbles
+                    _buildPlayArea(),
                   ],
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              Row(
-                children: [
-                  // Reset Game button
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: controller.resetGame,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.orange[300],
-                          border: Border.all(
-                            color: Colors.yellow[800]!,
-                            width: 0.3,
-                          ),
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.orange,
-                              blurRadius: 1,
-                              spreadRadius: 2,
-                              offset: const Offset(1, 3),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Reset Groups',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange[800],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Check Answer button
-                  Expanded(
-                    flex: 2,
-                    child: GestureDetector(
-                      onTap: controller.checkAnswer,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.green[300],
-                          border: Border.all(
-                            color: Colors.green[800]!,
-                            width: 0.3,
-                          ),
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.green,
-                              blurRadius: 1,
-                              spreadRadius: 2,
-                              offset: const Offset(3, 3),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Check Answer',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[800],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              // Action buttons
+              GameActionButtons(
+                onReset: controller.resetGame,
+                onCheckAnswer: controller.checkAnswer,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Build the column of target cards
+  Widget _buildTargetCardsColumn() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: List.generate(
+        controller.targetCards.length,
+        (index) => Obx(() {
+          final card = controller.targetCards[index];
+          final marbleCount = controller.marbles
+              .where((m) => m.groupId == card.assignedGroupId.value)
+              .length;
+
+          return TargetCard(
+            card: card,
+            marbleCount: marbleCount,
+            candidatePresent: false, // This could be enhanced to show drag feedback
+            onAccept: (marbleId) {
+              final marble = controller.marbles.firstWhere((m) => m.id == marbleId);
+              if (marble.groupId != null) {
+                controller.assignGroupToCard(marble.groupId!, card.id);
+              }
+            },
+            onWillAccept: (marbleId) {
+              final marble = controller.marbles.firstWhere((m) => m.id == marbleId);
+              return marble.groupId != null ? 1 : 0;
+            },
+          );
+        }),
+      ),
+    );
+  }
+
+  /// Build the main play area containing marbles
+  Widget _buildPlayArea() {
+    return Expanded(
+      child: Container(
+        key: controller.playAreaKey,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Obx(() {
+          return Stack(
+            children: [
+              // Render all marbles
+              ..._buildMarbles(),
+              
+              // Connection lines between grouped marbles
+              _buildConnectionLines(),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  /// Build all marble widgets
+  List<Widget> _buildMarbles() {
+    return controller.marbles.map((marble) {
+      return MarbleWidget(
+        marble: marble,
+        isHighlighted: false, // Could be enhanced to show drag feedback
+        canAccept: !marble.isLocked,
+        onDragUpdate: controller.updateMarblePositionDuringDrag,
+        onDragEnd: controller.updateMarblePosition,
+        onAccept: controller.groupMarbles,
+        onDoubleTap: () => controller.ungroupMarble(marble.id),
+      );
+    }).toList();
+  }
+
+  /// Build connection lines painter
+  Widget _buildConnectionLines() {
+    return IgnorePointer(
+      ignoring: true,
+      child: CustomPaint(
+        painter: GroupConnectionPainter(
+          marbles: controller.marbles.toList(),
+        ),
+        size: Size.infinite,
       ),
     );
   }

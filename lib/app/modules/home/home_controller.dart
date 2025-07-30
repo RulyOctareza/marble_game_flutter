@@ -1,29 +1,45 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:marble_game/app/data/models/marble_model.dart';
-import 'package:marble_game/app/data/models/math_problem_model.dart';
-import 'package:marble_game/app/data/models/target_card_model.dart';
 
+import '../../data/models/marble_model.dart';
+import '../../data/models/math_problem_model.dart';
+import '../../data/models/target_card_model.dart';
+import '../../core/constants/app_constants.dart';
+import '../../core/utils/game_utils.dart';
+import '../../core/services/dialog_service.dart';
+
+/// Main controller for the Marble Game home screen
+/// Manages game state, marble interactions, and level progression
 class HomeController extends GetxController {
+  // ==================== PROPERTIES ====================
+  
+  /// Key for accessing the play area widget
   final GlobalKey playAreaKey = GlobalKey();
-  final String title = "Marble Grouping Game";
+  
+  /// Game title displayed in the app
+  final String title = AppConstants.appTitle;
 
+  /// Current math problem to solve
   final Rx<MathProblemModel> problem = MathProblemModel(
     dividend: 24,
     divisor: 3,
   ).obs;
-  // Menggunakan .obs untuk setiap marble individual
+
+  /// List of all marbles in the game
   final marbles = <MarbleModel>[].obs;
+  
+  /// List of target cards where marble groups can be placed
   final targetCards = <TargetCardModel>[].obs;
 
-  // Track if check answer has been pressed
+  /// Tracks if the check answer button has been pressed
   final hasCheckedAnswer = false.obs;
 
-  // ✅ Add current level tracking
-  final currentLevel = 1.obs;
-  final totalLevels = 10.obs;
+  /// Current level tracking
+  final currentLevel = AppConstants.startingLevel.obs;
+  final totalLevels = AppConstants.totalLevels.obs;
 
+  /// Color palette for different marble groups
   final List<Color> groupColors = [
     Colors.deepPurpleAccent,
     Colors.purple,
@@ -34,25 +50,76 @@ class HomeController extends GetxController {
     Colors.brown,
   ];
 
+  // ==================== LIFECYCLE METHODS ====================
+
   @override
   void onInit() {
     super.onInit();
-    initializeTargetCards();
+    _initializeGame();
+  }
+
+  /// Initialize the game components
+  void _initializeGame() {
+    _initializeTargetCards();
     // Delay marble generation until after first frame to get accurate play area size
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      generateMarbles();
+      _generateMarbles();
     });
   }
 
-  // ✅ New method to start a completely new game
+  // ==================== GAME MANAGEMENT METHODS ====================
+
+  /// Start a completely new game with random problem
   void startNewGame() {
     // Generate new random problem
     problem.value = MathProblemModel.getRandomProblem();
 
-    // Reset state
-    hasCheckedAnswer.value = false;
+    // Reset game state
+    _resetGameState();
 
-    // Clear all groups and assignments
+    // Generate marbles based on new problem
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _generateMarbles();
+    });
+  }
+
+  /// Progress to the next level
+  void nextLevel() {
+    if (currentLevel.value < totalLevels.value) {
+      currentLevel.value++;
+      startNewGame();
+
+      DialogService.showLevelProgressSnackbar(
+        level: currentLevel.value,
+        problemText: '${problem.value.dividend} ÷ ${problem.value.divisor}',
+      );
+    } else {
+      // Game completed - show completion dialog
+      DialogService.showGameCompletionDialog(
+        onPlayAgain: () {
+          currentLevel.value = AppConstants.startingLevel;
+          startNewGame();
+        },
+      );
+    }
+  }
+
+  /// Reset the current game to initial state
+  void resetGame() {
+    _resetGameState();
+    _generateMarbles();
+    targetCards.refresh();
+  }
+
+  /// Reset game state without generating new problem
+  void _resetGameState() {
+    hasCheckedAnswer.value = false;
+    _clearAllGroups();
+    _resetTargetCards();
+  }
+
+  /// Clear all marble groups and assignments
+  void _clearAllGroups() {
     final updates = <MarbleModel>[];
     for (var marble in marbles) {
       updates.add(
@@ -65,53 +132,19 @@ class HomeController extends GetxController {
       );
     }
     _updateMarbles(updates);
+  }
 
-    // Reset target cards completely
+  /// Reset all target cards to empty state
+  void _resetTargetCards() {
     for (var card in targetCards) {
       card.clearGroup();
       card.isCorrect.value = false;
     }
-
-    // Generate marbles based on new problem
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      generateMarbles();
-    });
   }
 
-  // ✅ Method to go to next level
-  void nextLevel() {
-    if (currentLevel.value < totalLevels.value) {
-      currentLevel.value++;
-      startNewGame(); // Generate new problem
+  // ==================== MARBLE MANAGEMENT METHODS ====================
 
-      Get.snackbar(
-        'Level ${currentLevel.value}',
-        'New challenge! Solve: ${problem.value.dividend} ÷ ${problem.value.divisor}',
-        backgroundColor: Colors.blue.withOpacity(0.8),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-    } else {
-      // Game completed
-      Get.dialog(
-        AlertDialog(
-          title: const Text('🎉 Congratulations!'),
-          content: const Text('You have completed all levels!'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Get.back();
-                currentLevel.value = 1;
-                startNewGame();
-              },
-              child: const Text('Play Again'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
+  /// Update multiple marbles efficiently
   void _updateMarbles(List<MarbleModel> updates) {
     final List<MarbleModel> newList = List.from(marbles);
     for (var update in updates) {
@@ -123,92 +156,255 @@ class HomeController extends GetxController {
     marbles.assignAll(newList);
   }
 
-  // lib/app/modules/home/home_controller.dart
-
-  // Mengelompokkan kelereng saat di-drag satu sama lain
+  /// Group marbles together when dragged onto each other
   void groupMarbles(int draggedMarbleId, int targetMarbleId) {
     if (draggedMarbleId == targetMarbleId) return;
 
     final draggedMarble = marbles.firstWhere((m) => m.id == draggedMarbleId);
     final targetMarble = marbles.firstWhere((m) => m.id == targetMarbleId);
 
+    // Cannot group locked marbles
     if (targetMarble.isLocked || draggedMarble.isLocked) return;
 
-    // Tentukan group ID yang akan digunakan
-    int newGroupId =
-        targetMarble.groupId ?? draggedMarble.groupId ?? _generateNewGroupId();
+    // Determine the group ID to use
+    int newGroupId = targetMarble.groupId ?? 
+                     draggedMarble.groupId ?? 
+                     _generateNewGroupId();
 
-    // Gabungkan semua ID unik dari grup yang terlibat
-    final Set<int> marbleIdsInNewGroup = {};
+    // Collect all marble IDs that will be in the new group
+    final Set<int> marbleIdsInNewGroup = _collectGroupMarbleIds(
+      draggedMarble, 
+      targetMarble,
+    );
+
+    // Apply grouping with flower petal positioning
+    _applyGrouping(marbleIdsInNewGroup, newGroupId, targetMarble.position);
+  }
+
+  /// Collect all marble IDs that should be in the new group
+  Set<int> _collectGroupMarbleIds(MarbleModel draggedMarble, MarbleModel targetMarble) {
+    final Set<int> marbleIds = {};
+    
     for (var marble in [draggedMarble, targetMarble]) {
       if (marble.groupId != null) {
-        marbleIdsInNewGroup.addAll(
+        marbleIds.addAll(
           marbles.where((m) => m.groupId == marble.groupId).map((m) => m.id),
         );
       } else {
-        marbleIdsInNewGroup.add(marble.id);
+        marbleIds.add(marble.id);
       }
     }
+    
+    return marbleIds;
+  }
 
-    // ✅ Tentukan warna baru berdasarkan jumlah total anggota grup
-    final groupSize = marbleIdsInNewGroup.length;
-    Color newColor = Colors.blue; // Warna default
-    if (groupSize >= 2) {
-      // Ambil warna dari palet, jika lebih besar dari palet, gunakan warna terakhir
-      newColor = groupColors[min(groupSize - 2, groupColors.length - 1)];
-    }
-
-    // ✅ Logika baru untuk posisi kelopak bunga (flower petal)
+  /// Apply grouping logic with positioning and coloring
+  void _applyGrouping(Set<int> marbleIds, int groupId, Offset basePosition) {
+    final groupSize = marbleIds.length;
+    final Color newColor = _getGroupColor(groupSize);
+    final double radius = GameUtils.calculateGroupRadius(groupSize);
+    
     final updates = <MarbleModel>[];
-    final basePosition = targetMarble.position;
-    final double radius = 14.0 + (groupSize * 2.5);
-    int i = 0;
+    int index = 0;
 
-    for (int marbleId in marbleIdsInNewGroup) {
+    for (int marbleId in marbleIds) {
       final marble = marbles.firstWhere((m) => m.id == marbleId);
-      Offset newPosition;
-
-      if (groupSize <= 1) {
-        newPosition = basePosition;
-      } else {
-        // Hitung sudut untuk setiap kelereng agar membentuk lingkaran
-        final angle = (2 * pi / groupSize) * i;
-        newPosition =
-            basePosition + Offset(radius * cos(angle), radius * sin(angle));
-      }
+      final newPosition = GameUtils.calculateCircularPosition(
+        basePosition: basePosition,
+        radius: radius,
+        index: index,
+        totalMarbles: groupSize,
+      );
 
       updates.add(
         marble.copyWith(
-          groupId: newGroupId,
+          groupId: groupId,
           isGrouped: true,
           position: newPosition,
-          color: newColor, // Terapkan warna baru
+          color: newColor,
         ),
       );
-      i++;
+      index++;
     }
 
     _updateMarbles(updates);
   }
 
-  // Helper method untuk generate unique group ID
+  /// Get appropriate color for group based on size
+  Color _getGroupColor(int groupSize) {
+    if (groupSize < 2) return Colors.blue;
+    
+    final colorIndex = min(groupSize - 2, groupColors.length - 1);
+    return groupColors[colorIndex];
+  }
+
+  /// Generate a unique group ID
   int _generateNewGroupId() {
     final existingIds = marbles
         .where((m) => m.groupId != null)
         .map((m) => m.groupId!)
         .toSet();
 
-    int newId = 1000; // Start from 1000 to avoid conflict with marble IDs
+    int newId = AppConstants.newGroupIdStart;
     while (existingIds.contains(newId)) {
       newId++;
     }
     return newId;
   }
 
-  // Mengassign grup kelereng ke kartu target (allow any group, even wrong ones)
-  // Ganti fungsi lama dengan yang ini
+  /// Ungroup a marble from its current group
+  void ungroupMarble(int marbleId) {
+    final marble = marbles.firstWhere((m) => m.id == marbleId);
+    if (marble.isLocked || marble.groupId == null) return;
 
-  // Di dalam HomeController, perbarui metode ini
+    final groupId = marble.groupId!;
+    final groupMarbles = marbles.where((m) => m.groupId == groupId).toList();
+
+    if (groupMarbles.length <= 2) {
+      _ungroupAllMarbles(groupMarbles);
+    } else {
+      _ungroupSingleMarble(marble, groupMarbles);
+    }
+  }
+
+  /// Ungroup all marbles when group size is 2 or less
+  void _ungroupAllMarbles(List<MarbleModel> groupMarbles) {
+    final updates = <MarbleModel>[];
+    final Random random = Random();
+
+    for (var groupMarble in groupMarbles) {
+      updates.add(
+        groupMarble.copyWith(
+          groupId: null,
+          isGrouped: false,
+          isLocked: false,
+          color: Colors.blue,
+          position: groupMarble.position + Offset(
+            (random.nextDouble() - 0.5) * AppConstants.ungroupOffset,
+            (random.nextDouble() - 0.5) * AppConstants.ungroupOffset,
+          ),
+        ),
+      );
+    }
+
+    _updateMarbles(updates);
+  }
+
+  /// Ungroup a single marble from a larger group
+  void _ungroupSingleMarble(MarbleModel marble, List<MarbleModel> groupMarbles) {
+    final updates = <MarbleModel>[];
+    final Random random = Random();
+
+    // Remove the selected marble from group
+    updates.add(
+      marble.copyWith(
+        groupId: null,
+        isGrouped: false,
+        isLocked: false,
+        color: Colors.blue,
+        position: marble.position + Offset(
+          (random.nextDouble() - 0.5) * AppConstants.ungroupOffsetLarge,
+          (random.nextDouble() - 0.5) * AppConstants.ungroupOffsetLarge,
+        ),
+      ),
+    );
+
+    // Reorganize remaining marbles in the group
+    final remainingMarbles = groupMarbles.where((m) => m.id != marble.id).toList();
+    _reorganizeRemainingMarbles(remainingMarbles, updates);
+
+    _updateMarbles(updates);
+  }
+
+  /// Reorganize remaining marbles after ungrouping
+  void _reorganizeRemainingMarbles(List<MarbleModel> remainingMarbles, List<MarbleModel> updates) {
+    if (remainingMarbles.isEmpty) return;
+
+    final basePosition = remainingMarbles.first.position;
+    for (int i = 0; i < remainingMarbles.length; i++) {
+      updates.add(
+        remainingMarbles[i].copyWith(
+          position: basePosition + Offset(
+            (i % 4) * AppConstants.marbleRepositionSpacing,
+            (i ~/ 4) * AppConstants.marbleRepositionSpacing,
+          ),
+        ),
+      );
+    }
+  }
+
+  // ==================== MARBLE POSITIONING METHODS ====================
+
+  /// Update marble position during drag
+  void updateMarblePosition(int marbleId, Offset globalPosition) {
+    _updateMarblePositionInternal(marbleId, globalPosition, false);
+  }
+
+  /// Update marble position during drag (real-time)
+  void updateMarblePositionDuringDrag(int marbleId, Offset globalPosition) {
+    _updateMarblePositionInternal(marbleId, globalPosition, true);
+  }
+
+  /// Internal method to handle marble position updates
+  void _updateMarblePositionInternal(int marbleId, Offset globalPosition, bool isDuringDrag) {
+    final marble = marbles.firstWhere((m) => m.id == marbleId);
+    if (marble.isLocked) return;
+
+    final localPosition = _convertToLocalPosition(globalPosition);
+    final clampedPosition = _clampToPlayArea(localPosition);
+
+    if (marble.groupId != null) {
+      _updateGroupPosition(marble, clampedPosition);
+    } else {
+      _updateSingleMarblePosition(marble, clampedPosition);
+    }
+  }
+
+  /// Convert global position to local play area position
+  Offset _convertToLocalPosition(Offset globalPosition) {
+    final RenderBox box = playAreaKey.currentContext!.findRenderObject() as RenderBox;
+    return box.globalToLocal(globalPosition);
+  }
+
+  /// Clamp position within play area bounds
+  Offset _clampToPlayArea(Offset localPosition) {
+    final RenderBox box = playAreaKey.currentContext!.findRenderObject() as RenderBox;
+    return GameUtils.clampPosition(
+      position: localPosition,
+      playAreaSize: box.size,
+      marbleSize: AppConstants.marbleSize,
+    );
+  }
+
+  /// Update position for grouped marbles
+  void _updateGroupPosition(MarbleModel marble, Offset clampedPosition) {
+    final groupMarbles = marbles.where((m) => m.groupId == marble.groupId).toList();
+    final groupSize = groupMarbles.length;
+    final double radius = GameUtils.calculateGroupRadius(groupSize);
+
+    final updates = <MarbleModel>[];
+    for (int i = 0; i < groupSize; i++) {
+      final newPosition = GameUtils.calculateCircularPosition(
+        basePosition: clampedPosition,
+        radius: radius,
+        index: i,
+        totalMarbles: groupSize,
+      );
+      updates.add(groupMarbles[i].copyWith(position: newPosition));
+    }
+
+    _updateMarbles(updates);
+  }
+
+  /// Update position for single marble
+  void _updateSingleMarblePosition(MarbleModel marble, Offset clampedPosition) {
+    final updates = [marble.copyWith(position: clampedPosition)];
+    _updateMarbles(updates);
+  }
+
+  // ==================== TARGET CARD METHODS ====================
+
+  /// Assign a marble group to a target card
   void assignGroupToCard(int groupId, int cardId) {
     final targetCard = targetCards.firstWhere((card) => card.id == cardId);
     if (targetCard.hasGroup) return;
@@ -216,25 +412,35 @@ class HomeController extends GetxController {
     final groupMarbles = marbles.where((m) => m.groupId == groupId).toList();
     if (groupMarbles.isEmpty) return;
 
+    // Check if assignment is correct
     final correctCount = problem.value.dividend ~/ problem.value.divisor;
     final isCorrect = groupMarbles.length == correctCount;
 
+    // Assign group to card
     targetCard.assignGroup(groupId);
     targetCard.isCorrect.value = isCorrect;
 
-    final updates = <MarbleModel>[];
+    // Position marbles in the card area
+    _positionMarblesInCard(groupMarbles, cardId, targetCard.color);
+  }
 
-    // ✅ UBAH BARIS INI: Gunakan titik snap, bukan posisi kelereng
-    final basePosition = _getSnapPointForCard(cardId);
+  /// Position marbles within a target card
+  void _positionMarblesInCard(List<MarbleModel> groupMarbles, int cardId, Color cardColor) {
+    final basePosition = GameUtils.getSnapPointForCard(cardId);
+    final updates = <MarbleModel>[];
 
     for (int i = 0; i < groupMarbles.length; i++) {
       final marble = groupMarbles[i];
-      final newPosition =
-          basePosition + Offset((i % 4) * 35.0, (i ~/ 4) * 35.0);
+      final newPosition = GameUtils.calculateGridPosition(
+        basePosition: basePosition,
+        index: i,
+        spacing: AppConstants.marbleSpacing,
+        itemsPerRow: 4,
+      );
 
       updates.add(
         marble.copyWith(
-          color: targetCard.color,
+          color: cardColor,
           isLocked: true,
           position: newPosition,
         ),
@@ -244,158 +450,22 @@ class HomeController extends GetxController {
     _updateMarbles(updates);
   }
 
-  // void checkAnswer() {
-  //   hasCheckedAnswer.value = true; // Mark that check answer has been pressed
+  // ==================== ANSWER CHECKING METHODS ====================
 
-  //   bool allCorrect = true;
-  //   int correctCards = 0;
-  //   int wrongCards = 0;
-  //   int emptyCards = 0;
-  //   final correctCount = problem.dividend ~/ problem.divisor; // Should be 8
+  /// Check the current answer and show appropriate feedback
+  void checkAnswer() {
+    final (correctCards, wrongCards, emptyCards) = _evaluateCards();
+    final bool allCorrect = correctCards == targetCards.length && emptyCards == 0;
 
-  //   for (var card in targetCards) {
-  //     if (card.hasGroup) {
-  //       final marbleCount = marbles
-  //           .where((m) => m.groupId == card.assignedGroupId.value)
-  //           .length;
-
-  //       final isCorrect = marbleCount == correctCount;
-  //       card.isCorrect.value = isCorrect;
-
-  //       if (isCorrect) {
-  //         correctCards++;
-  //       } else {
-  //         wrongCards++;
-  //         allCorrect = false;
-  //       }
-  //     } else {
-  //       // Empty card is considered wrong
-  //       card.isCorrect.value = false;
-  //       emptyCards++;
-  //       allCorrect = false;
-  //     }
-  //   }
-
-  //   // Enhanced dialog with detailed feedback
-  //   Get.dialog(
-  //     AlertDialog(
-  //       title: Row(
-  //         children: [
-  //           Icon(
-  //             allCorrect ? Icons.celebration : Icons.info_outline,
-  //             color: allCorrect ? Colors.green : Colors.orange,
-  //             size: 28,
-  //           ),
-  //           const SizedBox(width: 8),
-  //           Text(
-  //             allCorrect ? 'Perfect! 🎉' : 'Check Results',
-  //             style: TextStyle(
-  //               color: allCorrect ? Colors.green : Colors.black87,
-  //               fontWeight: FontWeight.bold,
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //       content: Column(
-  //         mainAxisSize: MainAxisSize.min,
-  //         crossAxisAlignment: CrossAxisAlignment.start,
-  //         children: [
-  //           if (allCorrect) ...[
-  //             const Text(
-  //               '🎉 Congratulations! All your answers are correct!',
-  //               style: TextStyle(fontSize: 16),
-  //             ),
-  //             const SizedBox(height: 8),
-  //             Text(
-  //               'You correctly grouped ${problem.dividend} marbles into ${targetCards.length} groups of $correctCount each.',
-  //               style: TextStyle(color: Colors.grey[600]),
-  //             ),
-  //           ] else ...[
-  //             const Text(
-  //               'Here are your results:',
-  //               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-  //             ),
-  //             const SizedBox(height: 12),
-  //             if (correctCards > 0) ...[
-  //               Row(
-  //                 children: [
-  //                   const Icon(
-  //                     Icons.check_circle,
-  //                     color: Colors.green,
-  //                     size: 20,
-  //                   ),
-  //                   const SizedBox(width: 8),
-  //                   Text('$correctCards card(s) correct ✅'),
-  //                 ],
-  //               ),
-  //               const SizedBox(height: 4),
-  //             ],
-  //             if (wrongCards > 0) ...[
-  //               Row(
-  //                 children: [
-  //                   const Icon(Icons.cancel, color: Colors.red, size: 20),
-  //                   const SizedBox(width: 8),
-  //                   Text('$wrongCards card(s) wrong ❌'),
-  //                 ],
-  //               ),
-  //               const SizedBox(height: 4),
-  //             ],
-  //             if (emptyCards > 0) ...[
-  //               Row(
-  //                 children: [
-  //                   const Icon(Icons.warning, color: Colors.orange, size: 20),
-  //                   const SizedBox(width: 8),
-  //                   Text('$emptyCards card(s) empty ⚠️'),
-  //                 ],
-  //               ),
-  //               const SizedBox(height: 8),
-  //             ],
-  //             Text(
-  //               'Each card should have exactly $correctCount marbles.\nCheck the red-bordered cards and try again!',
-  //               style: TextStyle(color: Colors.grey[600]),
-  //             ),
-  //           ],
-  //         ],
-  //       ),
-  //       actions: [
-  //         if (!allCorrect) ...[
-  //           TextButton(
-  //             onPressed: () {
-  //               Get.back();
-  //               resetGame();
-  //             },
-  //             child: const Text('Reset & Try Again'),
-  //           ),
-  //         ],
-  //         TextButton(
-  //           onPressed: () => Get.back(),
-  //           child: Text(allCorrect ? 'Great!' : 'OK'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  Offset _getSnapPointForCard(int cardId) {
-    // Anda dapat menyesuaikan nilai Offset ini untuk mendapatkan posisi
-    // yang paling pas di layar Anda.
-    switch (cardId) {
-      case 0:
-        return const Offset(-1, 60); // Titik untuk kartu paling atas
-      case 1:
-        return const Offset(-1, 220); // Titik untuk kartu tengah
-      case 2:
-        return const Offset(-1, 360); // Titik untuk kartu paling bawah
-      default:
-        return const Offset(-1, 50);
+    if (allCorrect) {
+      _handleCorrectAnswer();
+    } else {
+      _handleIncorrectAnswer(correctCards, wrongCards, emptyCards);
     }
   }
 
-  void checkAnswer() {
-    // ✅ Don't set hasCheckedAnswer anymore since feedback is instant
-    // hasCheckedAnswer.value = true; // Remove this line
-
-    // Count results based on current card states
+  /// Evaluate the current state of all target cards
+  (int, int, int) _evaluateCards() {
     int correctCards = 0;
     int wrongCards = 0;
     int emptyCards = 0;
@@ -412,232 +482,38 @@ class HomeController extends GetxController {
       }
     }
 
-    bool allCorrect = correctCards == targetCards.length && emptyCards == 0;
+    return (correctCards, wrongCards, emptyCards);
+  }
 
-    // Show summary dialog
-    Get.dialog(
-      AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              allCorrect ? Icons.celebration : Icons.info_outline,
-              color: allCorrect ? Colors.green : Colors.orange,
-              size: 28,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              allCorrect ? 'Perfect! 🎉' : 'Game Summary',
-              style: TextStyle(
-                color: allCorrect ? Colors.green : Colors.black87,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (allCorrect) ...[
-              Text(
-                '🎉 Excellent! You solved ${problem.value.dividend} ÷ ${problem.value.divisor} = ${problem.value.dividend ~/ problem.value.divisor}',
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Level ${currentLevel.value} completed!',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ] else ...[
-              const Text(
-                'Current status:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              if (correctCards > 0)
-                Text('✅ $correctCards correct assignment(s)'),
-              if (wrongCards > 0) Text('❌ $wrongCards wrong assignment(s)'),
-              if (emptyCards > 0) Text('⚠️ $emptyCards empty card(s)'),
-              const SizedBox(height: 8),
-              Text(
-                'Each card needs exactly ${problem.value.dividend ~/ problem.value.divisor} marbles!',
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          if (!allCorrect) ...[
-            TextButton(
-              onPressed: () {
-                Get.back();
-                resetGame();
-              },
-              child: const Text('Try Again'),
-            ),
-          ],
-          if (allCorrect) ...[
-            TextButton(
-              onPressed: () {
-                Get.back();
-                nextLevel(); // ✅ Go to next level
-              },
-              child: Text(
-                currentLevel.value < totalLevels.value
-                    ? 'Next Level'
-                    : 'Finish Game',
-              ),
-            ),
-          ],
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text(allCorrect ? 'Stay Here' : 'Continue'),
-          ),
-        ],
-      ),
+  /// Handle correct answer scenario
+  void _handleCorrectAnswer() {
+    final problemText = '${problem.value.dividend} ÷ ${problem.value.divisor} = ${problem.value.dividend ~/ problem.value.divisor}';
+    
+    DialogService.showLevelCompleteDialog(
+      currentLevel: currentLevel.value,
+      totalLevels: totalLevels.value,
+      problemText: problemText,
+      onNextLevel: nextLevel,
     );
   }
 
-  void updateMarblePosition(int marbleId, Offset globalPosition) {
-    final RenderBox box =
-        playAreaKey.currentContext!.findRenderObject() as RenderBox;
-    final Offset localPosition = box.globalToLocal(globalPosition);
-    const double marbleSize = 40.0;
-
-    final clampedPosition = Offset(
-      localPosition.dx.clamp(0.0, box.size.width - marbleSize),
-      localPosition.dy.clamp(0.0, box.size.height - marbleSize),
+  /// Handle incorrect answer scenario
+  void _handleIncorrectAnswer(int correctCards, int wrongCards, int emptyCards) {
+    final expectedMarbles = problem.value.dividend ~/ problem.value.divisor;
+    
+    DialogService.showGameSummaryDialog(
+      correctCards: correctCards,
+      wrongCards: wrongCards,
+      emptyCards: emptyCards,
+      expectedMarbles: expectedMarbles,
+      onTryAgain: resetGame,
     );
-
-    final marble = marbles.firstWhere((m) => m.id == marbleId);
-    if (marble.isLocked) return;
-
-    final updates = <MarbleModel>[];
-    if (marble.groupId != null) {
-      final groupMarbles = marbles
-          .where((m) => m.groupId == marble.groupId)
-          .toList();
-      final groupSize = groupMarbles.length;
-      final double radius = 14.0 + (groupSize * 2.5);
-
-      for (int i = 0; i < groupSize; i++) {
-        final angle = (2 * pi / groupSize) * i;
-        final newPosition =
-            clampedPosition + Offset(radius * cos(angle), radius * sin(angle));
-        updates.add(groupMarbles[i].copyWith(position: newPosition));
-      }
-    } else {
-      updates.add(marble.copyWith(position: clampedPosition));
-    }
-
-    _updateMarbles(updates);
   }
 
-  void ungroupMarble(int marbleId) {
-    final marble = marbles.firstWhere((m) => m.id == marbleId);
-    if (marble.isLocked || marble.groupId == null) return;
+  // ==================== INITIALIZATION METHODS ====================
 
-    final groupId = marble.groupId!;
-    final groupMarbles = marbles.where((m) => m.groupId == groupId).toList();
-
-    final updates = <MarbleModel>[];
-    final Random random = Random();
-
-    if (groupMarbles.length <= 2) {
-      // Jika grup hanya 2 marble atau kurang, ungroup semua
-
-      for (var groupMarble in groupMarbles) {
-        updates.add(
-          groupMarble.copyWith(
-            groupId: null,
-            isGrouped: false,
-            isLocked: false,
-            position:
-                groupMarble.position +
-                Offset(
-                  (random.nextDouble() - 0.5) * 60,
-                  (random.nextDouble() - 0.5) * 60,
-                ),
-          ),
-        );
-      }
-    } else {
-      // Jika grup lebih dari 2, hanya ungroup marble yang dipilih
-      updates.add(
-        marble.copyWith(
-          groupId: null,
-          isGrouped: false,
-          isLocked: false,
-          // Move marble sedikit dari grup
-          position:
-              marble.position +
-              Offset(
-                (random.nextDouble() - 0.5) * 80,
-                (random.nextDouble() - 0.5) * 80,
-              ),
-        ),
-      );
-
-      // Reorganize remaining marbles in the group
-      final remainingMarbles = groupMarbles
-          .where((m) => m.id != marbleId)
-          .toList();
-      if (remainingMarbles.isNotEmpty) {
-        final basePosition = remainingMarbles.first.position;
-        for (int i = 0; i < remainingMarbles.length; i++) {
-          updates.add(
-            remainingMarbles[i].copyWith(
-              position: basePosition + Offset((i % 4) * 15.0, (i ~/ 4) * 15.0),
-            ),
-          );
-        }
-      }
-    }
-
-    _updateMarbles(updates);
-  }
-
-  void updateMarblePositionDuringDrag(int marbleId, Offset globalPosition) {
-    final RenderBox box =
-        playAreaKey.currentContext!.findRenderObject() as RenderBox;
-    final Offset localPosition = box.globalToLocal(globalPosition);
-    const double marbleSize = 40.0;
-
-    final clampedPosition = Offset(
-      localPosition.dx.clamp(0.0, box.size.width - marbleSize),
-      localPosition.dy.clamp(0.0, box.size.height - marbleSize),
-    );
-
-    final marble = marbles.firstWhere((m) => m.id == marbleId);
-    if (marble.isLocked) return;
-
-    final updates = <MarbleModel>[];
-    if (marble.groupId != null) {
-      final groupMarbles = marbles
-          .where((m) => m.groupId == marble.groupId)
-          .toList();
-      final groupSize = groupMarbles.length;
-      final double radius = 14.0 + (groupSize * 2.5);
-
-      for (int i = 0; i < groupSize; i++) {
-        final angle = (2 * pi / groupSize) * i;
-        final newPosition =
-            clampedPosition + Offset(radius * cos(angle), radius * sin(angle));
-        updates.add(groupMarbles[i].copyWith(position: newPosition));
-      }
-    } else {
-      updates.add(marble.copyWith(position: clampedPosition));
-    }
-
-    _updateMarbles(updates);
-  }
-
-  // ✅ Method to manually change problem (for testing)
-  void changeProblem() {
-    startNewGame();
-    targetCards.refresh();
-  }
-
-  void initializeTargetCards() {
+  /// Initialize target cards with predefined colors
+  void _initializeTargetCards() {
     targetCards.assignAll([
       TargetCardModel(id: 0, color: Colors.orangeAccent),
       TargetCardModel(id: 1, color: Colors.blue.shade400),
@@ -645,91 +521,51 @@ class HomeController extends GetxController {
     ]);
   }
 
-  void generateMarbles() {
-    // Get accurate play area size if available
-    Size playAreaSize;
-
-    try {
-      final RenderBox? box =
-          playAreaKey.currentContext?.findRenderObject() as RenderBox?;
-      if (box != null) {
-        playAreaSize = box.size;
-      } else {
-        // Fallback calculation accounting for target cards
-        final double availableWidth =
-            Get.width - 120 - 32; // Screen - target cards - padding
-        final double availableHeight = Get.height * 0.6; // 60% of screen
-        playAreaSize = Size(availableWidth, availableHeight);
-      }
-    } catch (e) {
-      // Safe fallback if context not available yet
-      final double availableWidth = Get.width - 120 - 32;
-      final double availableHeight = Get.height * 0.6;
-      playAreaSize = Size(availableWidth, availableHeight);
-    }
-
+  /// Generate marbles based on current problem
+  void _generateMarbles() {
+    final playAreaSize = _getPlayAreaSize();
     final Random random = Random();
-    List<MarbleModel> newMarbles = [];
+    final List<MarbleModel> newMarbles = [];
 
-    // ✅ Generate marbles based on current problem dividend
     final totalMarbles = problem.value.dividend;
 
     for (int i = 0; i < totalMarbles; i++) {
-      newMarbles.add(
-        MarbleModel(
-          id: i,
-          position: Offset(
-            20 +
-                random.nextDouble() * (playAreaSize.width - 80), // Safe margins
-            20 +
-                random.nextDouble() *
-                    (playAreaSize.height - 80), // Safe margins
-          ),
-        ),
+      final position = GameUtils.generateRandomOffset(
+        maxWidth: playAreaSize.width,
+        maxHeight: playAreaSize.height,
+        margin: AppConstants.safeMargin,
+        random1: random.nextDouble(),
+        random2: random.nextDouble(),
       );
+
+      newMarbles.add(MarbleModel(id: i, position: position));
     }
+
     marbles.assignAll(newMarbles);
   }
 
-  // Reset game functionality
-  void resetGame() {
-    // Reset check answer status
-    hasCheckedAnswer.value = false;
-
-    // Reset level to 1
-    currentLevel.value = 1;
-
-    // Clear all groups and assignments
-    final updates = <MarbleModel>[];
-    for (var marble in marbles) {
-      updates.add(
-        marble.copyWith(
-          groupId: null,
-          isGrouped: false,
-          isLocked: false,
-          color: Colors.blue,
-        ),
-      );
-    }
-    _updateMarbles(updates);
-
-    // Reset target cards completely
-    for (var card in targetCards) {
-      card.clearGroup();
-      card.isCorrect.value = false; // Reset correct status
+  /// Get play area size with fallback calculations
+  Size _getPlayAreaSize() {
+    try {
+      final RenderBox? box = playAreaKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box != null) {
+        return box.size;
+      }
+    } catch (e) {
+      // Context not available yet, use fallback
     }
 
-    // Regenerate marble positions
-    generateMarbles();
+    // Fallback calculation
+    final double availableWidth = Get.width - 120 - 32; // Screen - target cards - padding
+    final double availableHeight = Get.height * 0.6; // 60% of screen
+    return Size(availableWidth, availableHeight);
+  }
 
+  // ==================== UTILITY METHODS ====================
+
+  /// Change to a new random problem (for testing purposes)
+  void changeProblem() {
+    startNewGame();
     targetCards.refresh();
-
-    // Get.snackbar(
-    //   'Game Reset',
-    //   'Try again! Solve: ${problem.value.dividend} ÷ ${problem.value.divisor}',
-    //   backgroundColor: Colors.blue.withValues(alpha: .8),
-    //   colorText: Colors.white,
-    //   duration: const Duration(seconds: 2),
-    // );
   }
 }

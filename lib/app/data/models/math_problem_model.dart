@@ -1,12 +1,17 @@
 import 'dart:math';
 
+/// Model representing a math division problem in the game
+/// Contains dividend and divisor values with utility methods
 class MathProblemModel {
+  /// The number to be divided (e.g., 24 in "24 ÷ 3")
   final int dividend;
 
+  /// The number to divide by (e.g., 3 in "24 ÷ 3")
   final int divisor;
 
   MathProblemModel({required this.dividend, required this.divisor});
 
+  /// Get all predefined problems available in the game
   static List<MathProblemModel> getAllProblems() {
     return [
       MathProblemModel(dividend: 24, divisor: 3), // = 8
@@ -22,13 +27,13 @@ class MathProblemModel {
     ];
   }
 
-  // ✅ Get random problem
+  /// Get a random problem from the available problems
   static MathProblemModel getRandomProblem() {
     final problems = getAllProblems();
     final random = Random();
     return problems[random.nextInt(problems.length)];
   }
 
-  // Getter gawe ngitung jawaban teko soal otomatis
+  /// Calculate the result of the division problem
   int get result => dividend ~/ divisor;
 }

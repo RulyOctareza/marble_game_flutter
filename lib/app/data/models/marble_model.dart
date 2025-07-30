@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
+/// Model representing a marble in the game
+/// Contains position, grouping information, and visual state
 class MarbleModel {
+  /// Unique identifier for this marble
   final int id;
+  
+  /// Current position of the marble on screen
   final Offset position;
+  
+  /// ID of the group this marble belongs to (null if ungrouped)
   final int? groupId;
+  
+  /// Visual color of the marble
   final Color color;
+  
+  /// Whether this marble is part of a group
   final bool isGrouped;
-  final bool isLocked; // true jika sudah di-assign ke kartu target
+  
+  /// Whether this marble is locked (assigned to a target card)
+  final bool isLocked;
 
   MarbleModel({
     required this.id,
@@ -18,7 +30,8 @@ class MarbleModel {
     this.isLocked = false,
   });
 
-  // Method untuk membuat salinan MarbleModel dengan properti yang diperbarui
+  /// Create a copy of this marble with updated properties
+  /// Used for immutable state updates
   MarbleModel copyWith({
     int? id,
     Offset? position,

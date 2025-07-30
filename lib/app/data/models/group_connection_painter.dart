@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:marble_game/app/data/models/marble_model.dart';
 
+/// Custom painter for drawing connection lines between grouped marbles
+/// Visualizes which marbles belong to the same group
 class GroupConnectionPainter extends CustomPainter {
+  /// List of all marbles to check for grouping
   final List<MarbleModel> marbles;
+  
+  /// Radius of each marble for positioning calculations
   final double marbleRadius;
 
-  GroupConnectionPainter({required this.marbles, this.marbleRadius = 20.0});
+  GroupConnectionPainter({
+    required this.marbles, 
+    this.marbleRadius = 20.0,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -14,7 +22,7 @@ class GroupConnectionPainter extends CustomPainter {
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
 
-    // Kelompokkan kelereng berdasarkan groupId
+    // Group marbles by their group ID
     final groups = <int, List<MarbleModel>>{};
     for (var marble in marbles) {
       if (marble.groupId != null) {
@@ -22,19 +30,19 @@ class GroupConnectionPainter extends CustomPainter {
       }
     }
 
-    // Gambar garis untuk setiap grup
+    // Draw lines connecting marbles in each group
     groups.forEach((groupId, groupMarbles) {
       if (groupMarbles.length > 1 && !groupMarbles.first.isLocked) {
-        // Iterasi untuk setiap pasangan kelereng dalam grup
+        // Draw lines between every pair of marbles in the group
         for (int i = 0; i < groupMarbles.length; i++) {
           for (int j = i + 1; j < groupMarbles.length; j++) {
-            // Hitung titik tengah dari setiap kelereng
-            final startPoint =
-                groupMarbles[i].position + Offset(marbleRadius, marbleRadius);
-            final endPoint =
-                groupMarbles[j].position + Offset(marbleRadius, marbleRadius);
+            // Calculate center points of each marble
+            final startPoint = groupMarbles[i].position + 
+                Offset(marbleRadius, marbleRadius);
+            final endPoint = groupMarbles[j].position + 
+                Offset(marbleRadius, marbleRadius);
 
-            // Gambar garis yang menghubungkan kedua titik
+            // Draw connecting line
             canvas.drawLine(startPoint, endPoint, paint);
           }
         }
@@ -44,7 +52,7 @@ class GroupConnectionPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    // Selalu repaint jika ada perubahan untuk memastikan garis selalu update
+    // Always repaint to ensure lines are updated when marbles move
     return true;
   }
 }
