@@ -1,4 +1,7 @@
 # Marble Game
+![CI](https://github.com/rulyoctareza/marble_game_flutter/actions/workflows/marble_game.yml/badge.svg?branch=main)
+
+
 
 ![Play Area Screenshot](screenshots/play-area.png)
 
