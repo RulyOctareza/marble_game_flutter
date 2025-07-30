@@ -24,19 +24,23 @@ class HomeView extends GetView<HomeController> {
           child: Column(
             children: [
               // Game header with title and level info
-              Obx(() => GameHeader(
-                currentLevel: controller.currentLevel.value,
-                totalLevels: controller.totalLevels.value,
-                onNewProblem: controller.changeProblem,
-              )),
+              Obx(
+                () => GameHeader(
+                  currentLevel: controller.currentLevel.value,
+                  totalLevels: controller.totalLevels.value,
+                  onNewProblem: controller.changeProblem,
+                ),
+              ),
 
               const SizedBox(height: 8),
 
               // Math problem display
-              Obx(() => ProblemDisplay(
-                dividend: controller.problem.value.dividend,
-                divisor: controller.problem.value.divisor,
-              )),
+              Obx(
+                () => ProblemDisplay(
+                  dividend: controller.problem.value.dividend,
+                  divisor: controller.problem.value.divisor,
+                ),
+              ),
 
               const SizedBox(height: 12),
 
@@ -82,15 +86,20 @@ class HomeView extends GetView<HomeController> {
           return TargetCard(
             card: card,
             marbleCount: marbleCount,
-            candidatePresent: false, // This could be enhanced to show drag feedback
+            candidatePresent:
+                false, // This could be enhanced to show drag feedback
             onAccept: (marbleId) {
-              final marble = controller.marbles.firstWhere((m) => m.id == marbleId);
+              final marble = controller.marbles.firstWhere(
+                (m) => m.id == marbleId,
+              );
               if (marble.groupId != null) {
                 controller.assignGroupToCard(marble.groupId!, card.id);
               }
             },
             onWillAccept: (marbleId) {
-              final marble = controller.marbles.firstWhere((m) => m.id == marbleId);
+              final marble = controller.marbles.firstWhere(
+                (m) => m.id == marbleId,
+              );
               return marble.groupId != null ? 1 : 0;
             },
           );
@@ -113,7 +122,7 @@ class HomeView extends GetView<HomeController> {
             children: [
               // Render all marbles
               ..._buildMarbles(),
-              
+
               // Connection lines between grouped marbles
               _buildConnectionLines(),
             ],
@@ -143,9 +152,7 @@ class HomeView extends GetView<HomeController> {
     return IgnorePointer(
       ignoring: true,
       child: CustomPaint(
-        painter: GroupConnectionPainter(
-          marbles: controller.marbles.toList(),
-        ),
+        painter: GroupConnectionPainter(marbles: controller.marbles.toList()),
         size: Size.infinite,
       ),
     );
